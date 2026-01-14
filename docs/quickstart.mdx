@@ -1,0 +1,158 @@
+---
+title: Quickstart
+description: "Get up and running with Classer in under 5 minutes"
+---
+
+## 1. Get your API key
+
+<Steps>
+  <Step title="Create an account">
+    Sign up at [classer.ai](https://classer.ai) with Google
+  </Step>
+  <Step title="Generate API key">
+    Go to [API Keys](https://classer.ai/api-keys) and create a new key
+  </Step>
+  <Step title="Copy the key">
+    Save it somewhere safe — you'll only see it once
+  </Step>
+</Steps>
+
+## 2. Install the SDK
+
+<CodeGroup>
+
+```bash Python
+pip install classer
+```
+
+```bash TypeScript
+npm install classer-ai
+```
+
+</CodeGroup>
+
+## 3. Make your first call
+
+<CodeGroup>
+
+```python Python
+import classer
+import os
+
+# Set your API key
+os.environ["CLASSER_API_KEY"] = "your-api-key"
+
+# Classify text
+result = classer.classify(
+    source="I need help resetting my password",
+    labels=["billing", "technical", "sales"]
+)
+
+print(f"Label: {result.label}")
+print(f"Confidence: {result.confidence}")
+```
+
+```typescript TypeScript
+import { classify } from "classer-ai";
+
+// Set your API key
+process.env.CLASSER_API_KEY = "your-api-key";
+
+// Classify text
+const result = await classify({
+  source: "I need help resetting my password",
+  labels: ["billing", "technical", "sales"]
+});
+
+console.log(`Label: ${result.label}`);
+console.log(`Confidence: ${result.confidence}`);
+```
+
+</CodeGroup>
+
+## 4. Try other endpoints
+
+### Multi-label tagging
+
+<CodeGroup>
+
+```python Python
+result = classer.tag(
+    source="Breaking: Tech stocks surge amid AI boom",
+    labels=["politics", "technology", "finance", "sports"],
+    threshold=0.3
+)
+
+print(result.tags)  # ["technology", "finance"]
+```
+
+```typescript TypeScript
+const result = await tag({
+  source: "Breaking: Tech stocks surge amid AI boom",
+  labels: ["politics", "technology", "finance", "sports"],
+  threshold: 0.3
+});
+
+console.log(result.tags);  // ["technology", "finance"]
+```
+
+</CodeGroup>
+
+### RAG relevance scoring
+
+<CodeGroup>
+
+```python Python
+result = classer.match(
+    source="Our return policy allows refunds within 30 days.",
+    query="Can I get a refund?"
+)
+
+print(result.score)  # 0.95
+```
+
+```typescript TypeScript
+const result = await match({
+  source: "Our return policy allows refunds within 30 days.",
+  query: "Can I get a refund?"
+});
+
+console.log(result.score);  // 0.95
+```
+
+</CodeGroup>
+
+### Attribute scoring
+
+<CodeGroup>
+
+```python Python
+result = classer.score(
+    source="This is URGENT! System is down!",
+    attribute="urgency"
+)
+
+print(result.score)  # 0.92
+```
+
+```typescript TypeScript
+const result = await score({
+  source: "This is URGENT! System is down!",
+  attribute: "urgency"
+});
+
+console.log(result.score);  // 0.92
+```
+
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="book" href="/api-reference/overview">
+    Full endpoint documentation
+  </Card>
+  <Card title="Python SDK" icon="python" href="/sdks/python">
+    Python SDK reference
+  </Card>
+</CardGroup>

@@ -1,0 +1,149 @@
+---
+title: Classify
+api: POST /v1/classify
+description: "Classify text into exactly one label"
+---
+
+## Request
+
+<ParamField body="source" type="string" required>
+  The text to classify
+</ParamField>
+
+<ParamField body="labels" type="string[]" required>
+  List of possible labels (1-26 labels)
+</ParamField>
+
+<ParamField body="descriptions" type="object">
+  Optional descriptions for each label to improve accuracy
+</ParamField>
+
+<ParamField body="model" type="string">
+  Model override (optional)
+</ParamField>
+
+## Response
+
+<ResponseField name="label" type="string">
+  The predicted label
+</ResponseField>
+
+<ResponseField name="confidence" type="number">
+  Confidence score between 0 and 1
+</ResponseField>
+
+<ResponseField name="latency_ms" type="number">
+  Processing time in milliseconds
+</ResponseField>
+
+<ResponseField name="usage" type="object">
+  Token usage information
+</ResponseField>
+
+## Examples
+
+### Basic classification
+
+<CodeGroup>
+
+```python Python
+import classer
+
+result = classer.classify(
+    source="I can't log in to my account",
+    labels=["billing", "technical", "sales"]
+)
+
+print(result.label)      # "technical"
+print(result.confidence) # 0.94
+```
+
+```typescript TypeScript
+import { classify } from "classer-ai";
+
+const result = await classify({
+  source: "I can't log in to my account",
+  labels: ["billing", "technical", "sales"]
+});
+
+console.log(result.label);      // "technical"
+console.log(result.confidence); // 0.94
+```
+
+```bash cURL
+curl -X POST https://api.classer.ai/v1/classify \
+  -H "Authorization: Bearer $CLASSER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "I cannot log in to my account",
+    "labels": ["billing", "technical", "sales"]
+  }'
+```
+
+</CodeGroup>
+
+### With descriptions
+
+Adding descriptions improves accuracy for ambiguous labels:
+
+<CodeGroup>
+
+```python Python
+result = classer.classify(
+    source="We need pricing for 500 users",
+    labels=["hot", "warm", "cold"],
+    descriptions={
+        "hot": "Ready to buy, asking for pricing or demo",
+        "warm": "Interested but still exploring",
+        "cold": "Just browsing, no clear intent"
+    }
+)
+
+print(result.label)  # "hot"
+```
+
+```typescript TypeScript
+const result = await classify({
+  source: "We need pricing for 500 users",
+  labels: ["hot", "warm", "cold"],
+  descriptions: {
+    hot: "Ready to buy, asking for pricing or demo",
+    warm: "Interested but still exploring",
+    cold: "Just browsing, no clear intent"
+  }
+});
+
+console.log(result.label);  // "hot"
+```
+
+```bash cURL
+curl -X POST https://api.classer.ai/v1/classify \
+  -H "Authorization: Bearer $CLASSER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "We need pricing for 500 users",
+    "labels": ["hot", "warm", "cold"],
+    "descriptions": {
+      "hot": "Ready to buy, asking for pricing or demo",
+      "warm": "Interested but still exploring",
+      "cold": "Just browsing, no clear intent"
+    }
+  }'
+```
+
+</CodeGroup>
+
+<ResponseExample>
+```json
+{
+  "label": "technical",
+  "confidence": 0.9423,
+  "latency_ms": 142,
+  "usage": {
+    "prompt_tokens": 38,
+    "completion_tokens": 1,
+    "total_tokens": 39
+  }
+}
+```
+</ResponseExample>

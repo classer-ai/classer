@@ -1,0 +1,149 @@
+---
+title: Tag
+api: POST /v1/tag
+description: "Tag text with multiple labels"
+---
+
+## Request
+
+<ParamField body="source" type="string" required>
+  The text to tag
+</ParamField>
+
+<ParamField body="labels" type="string[]" required>
+  List of possible labels (2-26 labels)
+</ParamField>
+
+<ParamField body="descriptions" type="object">
+  Optional descriptions for each label to improve accuracy
+</ParamField>
+
+<ParamField body="threshold" type="number" default="0.3">
+  Minimum confidence threshold (0-1). Labels below this are excluded.
+</ParamField>
+
+<ParamField body="model" type="string">
+  Model override (optional)
+</ParamField>
+
+## Response
+
+<ResponseField name="tags" type="string[]">
+  List of labels above the threshold
+</ResponseField>
+
+<ResponseField name="confidences" type="number[]">
+  Confidence scores for each tag (same order as tags)
+</ResponseField>
+
+<ResponseField name="latency_ms" type="number">
+  Processing time in milliseconds
+</ResponseField>
+
+<ResponseField name="usage" type="object">
+  Token usage information
+</ResponseField>
+
+## Examples
+
+### Basic tagging
+
+<CodeGroup>
+
+```python Python
+import classer
+
+result = classer.tag(
+    source="Breaking: Tech stocks surge amid AI boom",
+    labels=["politics", "technology", "finance", "sports"],
+    threshold=0.3
+)
+
+print(result.tags)        # ["technology", "finance"]
+print(result.confidences) # [0.72, 0.45]
+```
+
+```typescript TypeScript
+import { tag } from "classer-ai";
+
+const result = await tag({
+  source: "Breaking: Tech stocks surge amid AI boom",
+  labels: ["politics", "technology", "finance", "sports"],
+  threshold: 0.3
+});
+
+console.log(result.tags);        // ["technology", "finance"]
+console.log(result.confidences); // [0.72, 0.45]
+```
+
+```bash cURL
+curl -X POST https://api.classer.ai/v1/tag \
+  -H "Authorization: Bearer $CLASSER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "Breaking: Tech stocks surge amid AI boom",
+    "labels": ["politics", "technology", "finance", "sports"],
+    "threshold": 0.3
+  }'
+```
+
+</CodeGroup>
+
+### Adjusting threshold
+
+Lower threshold = more tags, higher threshold = fewer but more confident tags.
+
+<CodeGroup>
+
+```python Python
+# Low threshold - get more tags
+result = classer.tag(
+    source="New study shows coffee may improve focus",
+    labels=["health", "science", "food", "lifestyle"],
+    threshold=0.2
+)
+# tags: ["health", "science", "food", "lifestyle"]
+
+# High threshold - only confident tags
+result = classer.tag(
+    source="New study shows coffee may improve focus",
+    labels=["health", "science", "food", "lifestyle"],
+    threshold=0.5
+)
+# tags: ["health", "science"]
+```
+
+```typescript TypeScript
+// Low threshold - get more tags
+const result = await tag({
+  source: "New study shows coffee may improve focus",
+  labels: ["health", "science", "food", "lifestyle"],
+  threshold: 0.2
+});
+// tags: ["health", "science", "food", "lifestyle"]
+
+// High threshold - only confident tags
+const result = await tag({
+  source: "New study shows coffee may improve focus",
+  labels: ["health", "science", "food", "lifestyle"],
+  threshold: 0.5
+});
+// tags: ["health", "science"]
+```
+
+</CodeGroup>
+
+<ResponseExample>
+```json
+{
+  "tags": ["technology", "finance"],
+  "confidences": [0.7234, 0.4521],
+  "latency_ms": 156,
+  "usage": {
+    "prompt_tokens": 42,
+    "completion_tokens": 1,
+    "total_tokens": 43
+  }
+}
+```
+</ResponseExample>

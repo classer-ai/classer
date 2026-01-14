@@ -1,0 +1,198 @@
+---
+title: Python SDK
+description: "Official Python SDK for Classer"
+---
+
+## Installation
+
+```bash
+pip install classer
+```
+
+## Quick Start
+
+```python
+import classer
+
+# Uses CLASSER_API_KEY environment variable
+result = classer.classify(
+    source="I can't log in",
+    labels=["billing", "technical", "sales"]
+)
+
+print(result.label)      # "technical"
+print(result.confidence) # 0.94
+```
+
+## Configuration
+
+### Environment variable (recommended)
+
+```bash
+export CLASSER_API_KEY=your-api-key
+```
+
+### Client instance
+
+```python
+from classer import ClasserClient
+
+client = ClasserClient(
+    api_key="your-api-key",
+    base_url="https://api.classer.ai",  # optional
+    timeout=30.0  # optional, in seconds
+)
+```
+
+## Methods
+
+### classify()
+
+Single-label classification.
+
+```python
+result = classer.classify(
+    source="Text to classify",
+    labels=["label1", "label2", "label3"],
+    descriptions={"label1": "Description"},  # optional
+    model="model-name"  # optional
+)
+
+# Response
+result.label        # str
+result.confidence   # float
+result.latency_ms   # float
+result.usage        # Usage | None
+```
+
+### tag()
+
+Multi-label classification.
+
+```python
+result = classer.tag(
+    source="Text to tag",
+    labels=["label1", "label2", "label3"],
+    descriptions={"label1": "Description"},  # optional
+    threshold=0.3,  # optional, default 0.3
+    model="model-name"  # optional
+)
+
+# Response
+result.tags         # list[str]
+result.confidences  # list[float]
+result.latency_ms   # float
+result.usage        # Usage | None
+```
+
+### match()
+
+Semantic similarity scoring.
+
+```python
+result = classer.match(
+    source="Document text",
+    query="Search query",
+    model="model-name"  # optional
+)
+
+# Response
+result.score        # float
+result.latency_ms   # float
+result.usage        # Usage | None
+```
+
+### score()
+
+Attribute scoring.
+
+```python
+result = classer.score(
+    source="Text to score",
+    attribute="urgency",
+    description="How urgent is this",  # optional
+    model="model-name"  # optional
+)
+
+# Response
+result.score        # float
+result.latency_ms   # float
+result.usage        # Usage | None
+```
+
+## Error Handling
+
+```python
+from classer import ClasserClient, ClasserError
+
+client = ClasserClient(api_key="your-key")
+
+try:
+    result = client.classify(
+        source="Hello",
+        labels=["greeting", "question"]
+    )
+except ClasserError as e:
+    print(f"Error: {e.message}")
+    print(f"Status: {e.status}")
+    print(f"Detail: {e.detail}")
+```
+
+## Types
+
+### ClassifyResponse
+
+```python
+@dataclass
+class ClassifyResponse:
+    label: str
+    confidence: float
+    latency_ms: float
+    usage: Optional[Usage] = None
+```
+
+### TagResponse
+
+```python
+@dataclass
+class TagResponse:
+    tags: list[str]
+    confidences: list[float]
+    latency_ms: float
+    usage: Optional[Usage] = None
+```
+
+### MatchResponse
+
+```python
+@dataclass
+class MatchResponse:
+    score: float
+    latency_ms: float
+    usage: Optional[Usage] = None
+```
+
+### ScoreResponse
+
+```python
+@dataclass
+class ScoreResponse:
+    score: float
+    latency_ms: float
+    usage: Optional[Usage] = None
+```
+
+### Usage
+
+```python
+@dataclass
+class Usage:
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+```
+
+## Requirements
+
+- Python 3.9+
+- httpx

@@ -1,0 +1,99 @@
+---
+title: Authentication
+description: "How to authenticate with the Classer API"
+---
+
+## API Keys
+
+All API requests require authentication using a Bearer token.
+
+### Getting your API key
+
+1. Sign in at [classer.ai](https://classer.ai)
+2. Go to [API Keys](https://classer.ai/api-keys)
+3. Click "Create API Key"
+4. Copy and store the key securely
+
+<Warning>
+  API keys are only shown once. If you lose your key, you'll need to create a new one.
+</Warning>
+
+## Using your API key
+
+### Environment variable (recommended)
+
+<CodeGroup>
+
+```bash Python
+export CLASSER_API_KEY=your-api-key
+```
+
+```bash TypeScript
+export CLASSER_API_KEY=your-api-key
+```
+
+</CodeGroup>
+
+The SDKs automatically read from this environment variable.
+
+### Direct configuration
+
+<CodeGroup>
+
+```python Python
+from classer import ClasserClient
+
+client = ClasserClient(api_key="your-api-key")
+result = client.classify(
+    source="Hello",
+    labels=["greeting", "question"]
+)
+```
+
+```typescript TypeScript
+import { ClasserClient } from "classer-ai";
+
+const client = new ClasserClient({ apiKey: "your-api-key" });
+const result = await client.classify({
+  source: "Hello",
+  labels: ["greeting", "question"]
+});
+```
+
+</CodeGroup>
+
+### HTTP header
+
+For direct API calls, include the key in the `Authorization` header:
+
+```bash
+curl -X POST https://api.classer.ai/v1/classify \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"source": "Hello", "labels": ["greeting", "question"]}'
+```
+
+## Security best practices
+
+<AccordionGroup>
+  <Accordion title="Never commit API keys to git">
+    Use environment variables or a secrets manager. Add `.env` to your `.gitignore`.
+  </Accordion>
+  <Accordion title="Use different keys for dev and production">
+    Create separate API keys for each environment.
+  </Accordion>
+  <Accordion title="Rotate keys periodically">
+    Delete old keys and create new ones regularly.
+  </Accordion>
+  <Accordion title="Set key expiration">
+    When creating a key, set an expiration date for added security.
+  </Accordion>
+</AccordionGroup>
+
+## Error responses
+
+| Status | Description |
+|--------|-------------|
+| `401 Unauthorized` | Missing or invalid API key |
+| `403 Forbidden` | API key doesn't have permission |
+| `429 Too Many Requests` | Rate limit exceeded |

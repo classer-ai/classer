@@ -1,0 +1,243 @@
+---
+title: TypeScript SDK
+description: "Official TypeScript/JavaScript SDK for Classer"
+---
+
+## Installation
+
+```bash
+npm install classer-ai
+```
+
+## Quick Start
+
+```typescript
+import { classify } from "classer-ai";
+
+// Uses CLASSER_API_KEY environment variable
+const result = await classify({
+  source: "I can't log in",
+  labels: ["billing", "technical", "sales"]
+});
+
+console.log(result.label);      // "technical"
+console.log(result.confidence); // 0.94
+```
+
+## Configuration
+
+### Environment variable (recommended)
+
+```bash
+export CLASSER_API_KEY=your-api-key
+```
+
+### Client instance
+
+```typescript
+import { ClasserClient } from "classer-ai";
+
+const client = new ClasserClient({
+  apiKey: "your-api-key",
+  baseUrl: "https://api.classer.ai"  // optional
+});
+```
+
+## Methods
+
+### classify()
+
+Single-label classification.
+
+```typescript
+const result = await classify({
+  source: "Text to classify",
+  labels: ["label1", "label2", "label3"],
+  descriptions: { label1: "Description" },  // optional
+  model: "model-name"  // optional
+});
+
+// Response
+result.label        // string
+result.confidence   // number
+result.latency_ms   // number
+result.usage        // Usage | undefined
+```
+
+### tag()
+
+Multi-label classification.
+
+```typescript
+const result = await tag({
+  source: "Text to tag",
+  labels: ["label1", "label2", "label3"],
+  descriptions: { label1: "Description" },  // optional
+  threshold: 0.3,  // optional, default 0.3
+  model: "model-name"  // optional
+});
+
+// Response
+result.tags         // string[]
+result.confidences  // number[]
+result.latency_ms   // number
+result.usage        // Usage | undefined
+```
+
+### match()
+
+Semantic similarity scoring.
+
+```typescript
+const result = await match({
+  source: "Document text",
+  query: "Search query",
+  model: "model-name"  // optional
+});
+
+// Response
+result.score        // number
+result.latency_ms   // number
+result.usage        // Usage | undefined
+```
+
+### score()
+
+Attribute scoring.
+
+```typescript
+const result = await score({
+  source: "Text to score",
+  attribute: "urgency",
+  description: "How urgent is this",  // optional
+  model: "model-name"  // optional
+});
+
+// Response
+result.score        // number
+result.latency_ms   // number
+result.usage        // Usage | undefined
+```
+
+## Error Handling
+
+```typescript
+import { ClasserClient, ClasserError } from "classer-ai";
+
+const client = new ClasserClient({ apiKey: "your-key" });
+
+try {
+  const result = await client.classify({
+    source: "Hello",
+    labels: ["greeting", "question"]
+  });
+} catch (error) {
+  if (error instanceof ClasserError) {
+    console.log(`Error: ${error.message}`);
+    console.log(`Status: ${error.status}`);
+    console.log(`Detail: ${error.detail}`);
+  }
+}
+```
+
+## Types
+
+### ClassifyRequest
+
+```typescript
+interface ClassifyRequest {
+  source: string;
+  labels: string[];
+  descriptions?: Record<string, string>;
+  model?: string;
+}
+```
+
+### ClassifyResponse
+
+```typescript
+interface ClassifyResponse {
+  label: string;
+  confidence: number;
+  latency_ms: number;
+  usage?: Usage;
+}
+```
+
+### TagRequest
+
+```typescript
+interface TagRequest {
+  source: string;
+  labels: string[];
+  descriptions?: Record<string, string>;
+  threshold?: number;
+  model?: string;
+}
+```
+
+### TagResponse
+
+```typescript
+interface TagResponse {
+  tags: string[];
+  confidences: number[];
+  latency_ms: number;
+  usage?: Usage;
+}
+```
+
+### MatchRequest
+
+```typescript
+interface MatchRequest {
+  source: string;
+  query: string;
+  model?: string;
+}
+```
+
+### MatchResponse
+
+```typescript
+interface MatchResponse {
+  score: number;
+  latency_ms: number;
+  usage?: Usage;
+}
+```
+
+### ScoreRequest
+
+```typescript
+interface ScoreRequest {
+  source: string;
+  attribute: string;
+  description?: string;
+  model?: string;
+}
+```
+
+### ScoreResponse
+
+```typescript
+interface ScoreResponse {
+  score: number;
+  latency_ms: number;
+  usage?: Usage;
+}
+```
+
+### Usage
+
+```typescript
+interface Usage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+```
+
+## Requirements
+
+- Node.js 18+ or modern browser with fetch support

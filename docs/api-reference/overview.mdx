@@ -1,0 +1,74 @@
+---
+title: Overview
+description: "Classer API reference"
+---
+
+## Base URL
+
+```
+https://api.classer.ai
+```
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/v1/classify` | Single-label classification |
+| POST | `/v1/tag` | Multi-label classification |
+| POST | `/v1/match` | Semantic similarity scoring |
+| POST | `/v1/score` | Attribute scoring |
+
+## Authentication
+
+All requests require a Bearer token in the `Authorization` header:
+
+```bash
+Authorization: Bearer your-api-key
+```
+
+## Request format
+
+All endpoints accept JSON with `Content-Type: application/json`.
+
+## Response format
+
+All responses include:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `latency_ms` | number | Processing time in milliseconds |
+| `usage` | object | Token usage (optional) |
+
+### Usage object
+
+```json
+{
+  "prompt_tokens": 42,
+  "completion_tokens": 1,
+  "total_tokens": 43
+}
+```
+
+## Error responses
+
+```json
+{
+  "detail": "Error message describing what went wrong"
+}
+```
+
+| Status | Description |
+|--------|-------------|
+| `400` | Bad request — invalid parameters |
+| `401` | Unauthorized — missing or invalid API key |
+| `422` | Validation error — check request body |
+| `429` | Rate limit exceeded |
+| `500` | Internal server error |
+
+## Rate limits
+
+| Plan | Requests/minute |
+|------|-----------------|
+| Free | 60 |
+| Pro | 600 |
+| Enterprise | Unlimited |

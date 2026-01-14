@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "classer"
+version = "0.0.1"
+description = "Low-cost, fast AI classification API"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Classer.ai" }]
+keywords = ["ai", "classification", "nlp", "machine-learning", "text-classification", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.9"
+dependencies = ["httpx>=0.25.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "pytest-asyncio>=0.23.0", "ruff>=0.1.0"]
+
+[project.urls]
+Homepage = "https://classer.ai"
+Documentation = "https://docs.classer.ai"
+Repository = "https://github.com/classer-ai/classer-python"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/classer"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

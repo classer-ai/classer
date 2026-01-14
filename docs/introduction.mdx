@@ -1,0 +1,82 @@
+---
+title: Introduction
+description: "Low-cost, fast AI classification API. 10x cheaper than GPT, <200ms latency."
+---
+
+## What is Classer?
+
+Classer is an AI classification API built for production. Classify text, tag content, score attributes, and match queries — all with a single API call.
+
+<CardGroup cols={2}>
+  <Card title="10x Cheaper" icon="dollar-sign">
+    Fraction of the cost of GPT-4 or Claude
+  </Card>
+  <Card title="<200ms Latency" icon="bolt">
+    Fast enough for real-time applications
+  </Card>
+  <Card title="Zero Training" icon="sparkles">
+    Works out of the box, no examples needed
+  </Card>
+  <Card title="Simple API" icon="code">
+    One endpoint, instant results
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+- **Support Ticket Routing** — Classify incoming tickets to the right team
+- **Lead Scoring** — Score leads as hot, warm, or cold
+- **Content Moderation** — Detect toxicity, spam, or inappropriate content
+- **Document Tagging** — Auto-tag articles with multiple categories
+- **RAG Retrieval** — Score document relevance for search
+
+## Quick Example
+
+<CodeGroup>
+
+```python Python
+import classer
+
+result = classer.classify(
+    source="I can't log in to my account",
+    labels=["billing", "technical", "sales"]
+)
+
+print(result.label)      # "technical"
+print(result.confidence) # 0.94
+```
+
+```typescript TypeScript
+import { classify } from "classer-ai";
+
+const result = await classify({
+  source: "I can't log in to my account",
+  labels: ["billing", "technical", "sales"]
+});
+
+console.log(result.label);      // "technical"
+console.log(result.confidence); // 0.94
+```
+
+```bash cURL
+curl -X POST https://api.classer.ai/v1/classify \
+  -H "Authorization: Bearer $CLASSER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "I cannot log in to my account",
+    "labels": ["billing", "technical", "sales"]
+  }'
+```
+
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="API Reference" icon="book" href="/api-reference/overview">
+    Explore all endpoints
+  </Card>
+</CardGroup>

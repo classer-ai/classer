@@ -1,0 +1,188 @@
+---
+title: Score
+api: POST /v1/score
+description: "Score text on a specific attribute"
+---
+
+## Request
+
+<ParamField body="source" type="string" required>
+  The text to score
+</ParamField>
+
+<ParamField body="attribute" type="string" required>
+  The attribute to score (e.g., "urgency", "toxicity", "quality")
+</ParamField>
+
+<ParamField body="description" type="string">
+  Optional description of the attribute for better accuracy
+</ParamField>
+
+<ParamField body="model" type="string">
+  Model override (optional)
+</ParamField>
+
+## Response
+
+<ResponseField name="score" type="number">
+  Score between 0 and 1
+</ResponseField>
+
+<ResponseField name="latency_ms" type="number">
+  Processing time in milliseconds
+</ResponseField>
+
+<ResponseField name="usage" type="object">
+  Token usage information
+</ResponseField>
+
+## Common Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `urgency` | How urgent is the message |
+| `toxicity` | Level of toxic/offensive content |
+| `sentiment` | Positive sentiment (1) vs negative (0) |
+| `formality` | How formal is the writing |
+| `quality` | Content quality |
+| `spam` | Likelihood of being spam |
+
+## Examples
+
+### Urgency scoring
+
+<CodeGroup>
+
+```python Python
+import classer
+
+result = classer.score(
+    source="URGENT! Server is down! Need help NOW!",
+    attribute="urgency"
+)
+
+print(result.score)  # 0.95
+```
+
+```typescript TypeScript
+import { score } from "classer-ai";
+
+const result = await score({
+  source: "URGENT! Server is down! Need help NOW!",
+  attribute: "urgency"
+});
+
+console.log(result.score);  // 0.95
+```
+
+```bash cURL
+curl -X POST https://api.classer.ai/v1/score \
+  -H "Authorization: Bearer $CLASSER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "URGENT! Server is down! Need help NOW!",
+    "attribute": "urgency"
+  }'
+```
+
+</CodeGroup>
+
+### Toxicity detection
+
+<CodeGroup>
+
+```python Python
+# Toxic content
+result = classer.score(
+    source="You're an idiot and your product is garbage",
+    attribute="toxicity"
+)
+print(result.score)  # 0.89
+
+# Non-toxic content
+result = classer.score(
+    source="Thank you for your help, I really appreciate it!",
+    attribute="toxicity"
+)
+print(result.score)  # 0.08
+```
+
+```typescript TypeScript
+// Toxic content
+let result = await score({
+  source: "You're an idiot and your product is garbage",
+  attribute: "toxicity"
+});
+console.log(result.score);  // 0.89
+
+// Non-toxic content
+result = await score({
+  source: "Thank you for your help, I really appreciate it!",
+  attribute: "toxicity"
+});
+console.log(result.score);  // 0.08
+```
+
+</CodeGroup>
+
+### Custom attribute with description
+
+<CodeGroup>
+
+```python Python
+result = classer.score(
+    source="I've been waiting 3 weeks for my order",
+    attribute="frustration",
+    description="Level of customer frustration or dissatisfaction"
+)
+
+print(result.score)  # 0.72
+```
+
+```typescript TypeScript
+const result = await score({
+  source: "I've been waiting 3 weeks for my order",
+  attribute: "frustration",
+  description: "Level of customer frustration or dissatisfaction"
+});
+
+console.log(result.score);  // 0.72
+```
+
+</CodeGroup>
+
+### Prioritizing support tickets
+
+```python Python
+import classer
+
+tickets = [
+    "When will the new feature be released?",
+    "URGENT: Production database is corrupted!",
+    "How do I change my email address?",
+]
+
+# Score urgency for each ticket
+for ticket in tickets:
+    result = classer.score(source=ticket, attribute="urgency")
+    print(f"{result.score:.2f} - {ticket[:40]}...")
+
+# Output:
+# 0.15 - When will the new feature be released?...
+# 0.98 - URGENT: Production database is corrupted...
+# 0.12 - How do I change my email address?...
+```
+
+<ResponseExample>
+```json
+{
+  "score": 0.9234,
+  "latency_ms": 125,
+  "usage": {
+    "prompt_tokens": 35,
+    "completion_tokens": 1,
+    "total_tokens": 36
+  }
+}
+```
+</ResponseExample>
