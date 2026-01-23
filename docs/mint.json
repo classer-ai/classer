@@ -7,13 +7,14 @@
   },
   "favicon": "/favicon.svg",
   "colors": {
-    "primary": "#6366f1",
-    "light": "#818cf8",
-    "dark": "#4f46e5",
-    "anchors": {
-      "from": "#6366f1",
-      "to": "#8b5cf6"
-    }
+    "primary": "#000000",
+    "light": "#404040",
+    "dark": "#000000"
+  },
+  "metadata": {
+    "og:site_name": "Classer",
+    "og:description": "AI text classification API - 10x cheaper than GPT, <200ms latency",
+    "twitter:site": "@classerai"
   },
   "topbarLinks": [
     {

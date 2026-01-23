@@ -3,100 +3,36 @@
 from typing import Any
 
 class Resource:
-    class AiApiCloudwatchNamespace:
-        type: str
-        value: str
-    class AiApiService:
+    class ApiService:
         service: str
         type: str
         url: str
-    class ApiToken:
-        type: str
-        value: str
     class App:
         name: str
         stage: str
-    class AppStoreConnectApiIssuerId:
+    class AuthSecret:
         type: str
         value: str
-    class AppStoreConnectApiKeyId:
+    class CronSecret:
         type: str
         value: str
-    class AppStoreConnectApiPrivateKey:
-        type: str
-        value: str
-    class AppleProviderKeyId:
-        type: str
-        value: str
-    class AppleProviderPrivateKey:
-        type: str
-        value: str
-    class CerebrasApiKey:
-        type: str
-        value: str
-    class ClasserApiService:
-        service: str
+    class Frontend:
         type: str
         url: str
-    class ClasserAuthSecret:
-        type: str
-        value: str
-    class ClasserFrontend:
-        type: str
-        url: str
-    class ClasserGoogleClientId:
-        type: str
-        value: str
-    class ClasserGoogleClientSecret:
-        type: str
-        value: str
-    class ClasserLlmGateway:
-        service: str
-        type: str
-        url: str
-    class ClasserPostgres:
-        database: str
-        host: str
-        password: str
-        port: float
-        type: str
-        username: str
     class GoogleClientId:
         type: str
         value: str
     class GoogleClientSecret:
         type: str
         value: str
-    class GooglePlayCredentials:
+    class GrafanaAdminPassword:
         type: str
         value: str
-    class Hono:
-        name: str
-        type: str
-        url: str
-    class InternalApiToken:
-        type: str
-        value: str
-    class InternalChatUri:
-        type: str
-        value: str
-    class LlmGatewayService:
+    class LlmGateway:
         service: str
         type: str
         url: str
-    class MathSolverApiKey:
-        type: str
-        value: str
-    class MathSolverBaseUrl:
-        type: str
-        value: str
     class OpenRouterApiKey:
-        type: str
-        value: str
-    class OpenRouterApiKeyAiApi:
-        type: str
-        value: str
-    class OpenaiApiKey:
         type: str
         value: str
     class Postgres:
@@ -106,39 +42,18 @@ class Resource:
         port: float
         type: str
         username: str
-    class PythonApi:
-        name: str
-        type: str
-        url: str
-    class PythonApiOpenRouterApiKey:
+    class SesFromEmail:
         type: str
         value: str
-    class PythonApiOpenRouterModel:
+    class StripePublishableKey:
         type: str
         value: str
-    class Service:
-        service: str
-        type: str
-        url: str
-    class SlackStimyStatusWebhookUrl:
+    class StripeSecretKey:
         type: str
         value: str
-    class SlackWebhookUrl:
+    class StripeWebhookSecret:
         type: str
         value: str
-    class TopicsSecret:
-        type: str
-        value: str
-    class Uploads:
-        name: str
-        type: str
-    class UserPool:
-        id: str
-        type: str
-    class UserPoolClient:
-        id: str
-        secret: str
-        type: str
     class VastApiKey:
         type: str
         value: str
