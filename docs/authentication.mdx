@@ -45,7 +45,7 @@ from classer import ClasserClient
 
 client = ClasserClient(api_key="your-api-key")
 result = client.classify(
-    source="Hello",
+    text="Hello",
     labels=["greeting", "question"]
 )
 ```
@@ -55,7 +55,7 @@ import { ClasserClient } from "classer-ai";
 
 const client = new ClasserClient({ apiKey: "your-api-key" });
 const result = await client.classify({
-  source: "Hello",
+  text: "Hello",
   labels: ["greeting", "question"]
 });
 ```
@@ -70,7 +70,7 @@ For direct API calls, include the key in the `Authorization` header:
 curl -X POST https://api.classer.ai/v1/classify \
   -H "Authorization: Bearer your-api-key" \
   -H "Content-Type: application/json" \
-  -d '{"source": "Hello", "labels": ["greeting", "question"]}'
+  -d '{"text": "Hello", "labels": ["greeting", "question"]}'
 ```
 
 ## Security best practices

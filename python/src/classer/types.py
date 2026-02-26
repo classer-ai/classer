@@ -1,51 +1,33 @@
 """Type definitions for the Classer SDK."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
-
-
-@dataclass
-class Usage:
-    """Token usage information."""
-
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
 
 
 @dataclass
 class ClassifyResponse:
     """Response from single-label classification."""
 
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    tokens: int = 0
+    latency_ms: float = 0.0
+    cached: bool = False
+
+
+@dataclass
+class TagLabel:
+    """Single label with confidence in a tag response."""
+
     label: str
     confidence: float
-    latency_ms: float
-    usage: Optional[Usage] = None
 
 
 @dataclass
 class TagResponse:
-    """Response from multi-label classification."""
+    """Response from multi-label tagging."""
 
-    tags: list[str]
-    confidences: list[float]
-    latency_ms: float
-    usage: Optional[Usage] = None
-
-
-@dataclass
-class MatchResponse:
-    """Response from semantic similarity scoring."""
-
-    score: float
-    latency_ms: float
-    usage: Optional[Usage] = None
-
-
-@dataclass
-class ScoreResponse:
-    """Response from attribute scoring."""
-
-    score: float
-    latency_ms: float
-    usage: Optional[Usage] = None
+    labels: list[TagLabel] = field(default_factory=list)
+    tokens: int = 0
+    latency_ms: float = 0.0
+    cached: bool = False

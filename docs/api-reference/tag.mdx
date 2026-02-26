@@ -6,12 +6,12 @@ description: "Tag text with multiple labels"
 
 ## Request
 
-<ParamField body="source" type="string" required>
+<ParamField body="text" type="string" required>
   The text to tag
 </ParamField>
 
 <ParamField body="labels" type="string[]" required>
-  List of possible labels (2-26 labels)
+  List of possible labels (1-100)
 </ParamField>
 
 <ParamField body="descriptions" type="object">
@@ -19,29 +19,37 @@ description: "Tag text with multiple labels"
 </ParamField>
 
 <ParamField body="threshold" type="number" default="0.3">
-  Minimum confidence threshold (0-1). Labels below this are excluded.
+  Confidence threshold (0-1). Only labels above this threshold are returned.
 </ParamField>
 
 <ParamField body="model" type="string">
   Model override (optional)
 </ParamField>
 
+<ParamField body="speed" type="string" default="fast">
+  Speed tier: `fast` (<200ms, $0.60/1M tokens) or `standard` (<1s, $0.20/1M tokens)
+</ParamField>
+
+<ParamField body="cache" type="boolean" default="true">
+  Set to `false` to bypass cache and force a fresh classification
+</ParamField>
+
 ## Response
 
-<ResponseField name="tags" type="string[]">
-  List of labels above the threshold
+<ResponseField name="labels" type="array">
+  Labels above the threshold, each with `label` (string) and `confidence` (number)
 </ResponseField>
 
-<ResponseField name="confidences" type="number[]">
-  Confidence scores for each tag (same order as tags)
+<ResponseField name="tokens" type="number">
+  Total tokens used
 </ResponseField>
 
 <ResponseField name="latency_ms" type="number">
   Processing time in milliseconds
 </ResponseField>
 
-<ResponseField name="usage" type="object">
-  Token usage information
+<ResponseField name="cached" type="boolean">
+  Whether the response was served from cache
 </ResponseField>
 
 ## Examples
@@ -54,26 +62,31 @@ description: "Tag text with multiple labels"
 import classer
 
 result = classer.tag(
-    source="Breaking: Tech stocks surge amid AI boom",
+    text="Breaking: Tech stocks surge amid AI boom",
     labels=["politics", "technology", "finance", "sports"],
     threshold=0.3
 )
 
-print(result.tags)        # ["technology", "finance"]
-print(result.confidences) # [0.72, 0.45]
+for t in result.labels:
+    print(f"{t.label}: {t.confidence}")
+# technology: 0.92
+# finance: 0.78
 ```
 
 ```typescript TypeScript
 import { tag } from "classer-ai";
 
 const result = await tag({
-  source: "Breaking: Tech stocks surge amid AI boom",
+  text: "Breaking: Tech stocks surge amid AI boom",
   labels: ["politics", "technology", "finance", "sports"],
   threshold: 0.3
 });
 
-console.log(result.tags);        // ["technology", "finance"]
-console.log(result.confidences); // [0.72, 0.45]
+for (const t of result.labels) {
+  console.log(`${t.label}: ${t.confidence}`);
+}
+// technology: 0.92
+// finance: 0.78
 ```
 
 ```bash cURL
@@ -81,7 +94,7 @@ curl -X POST https://api.classer.ai/v1/tag \
   -H "Authorization: Bearer $CLASSER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "source": "Breaking: Tech stocks surge amid AI boom",
+    "text": "Breaking: Tech stocks surge amid AI boom",
     "labels": ["politics", "technology", "finance", "sports"],
     "threshold": 0.3
   }'
@@ -89,46 +102,43 @@ curl -X POST https://api.classer.ai/v1/tag \
 
 </CodeGroup>
 
-### Adjusting threshold
-
-Lower threshold = more tags, higher threshold = fewer but more confident tags.
+### With descriptions
 
 <CodeGroup>
 
 ```python Python
-# Low threshold - get more tags
 result = classer.tag(
-    source="New study shows coffee may improve focus",
-    labels=["health", "science", "food", "lifestyle"],
-    threshold=0.2
+    text="New iPhone announced with AI features and lower price",
+    labels=["technology", "business", "consumer", "ai"],
+    descriptions={
+        "technology": "Hardware, software, gadgets",
+        "business": "Corporate news, earnings, strategy",
+        "consumer": "Product launches, pricing, reviews",
+        "ai": "Artificial intelligence, machine learning"
+    },
+    threshold=0.4
 )
-# tags: ["health", "science", "food", "lifestyle"]
 
-# High threshold - only confident tags
-result = classer.tag(
-    source="New study shows coffee may improve focus",
-    labels=["health", "science", "food", "lifestyle"],
-    threshold=0.5
-)
-# tags: ["health", "science"]
+for t in result.labels:
+    print(f"{t.label}: {t.confidence}")
 ```
 
 ```typescript TypeScript
-// Low threshold - get more tags
 const result = await tag({
-  source: "New study shows coffee may improve focus",
-  labels: ["health", "science", "food", "lifestyle"],
-  threshold: 0.2
+  text: "New iPhone announced with AI features and lower price",
+  labels: ["technology", "business", "consumer", "ai"],
+  descriptions: {
+    technology: "Hardware, software, gadgets",
+    business: "Corporate news, earnings, strategy",
+    consumer: "Product launches, pricing, reviews",
+    ai: "Artificial intelligence, machine learning"
+  },
+  threshold: 0.4
 });
-// tags: ["health", "science", "food", "lifestyle"]
 
-// High threshold - only confident tags
-const result = await tag({
-  source: "New study shows coffee may improve focus",
-  labels: ["health", "science", "food", "lifestyle"],
-  threshold: 0.5
-});
-// tags: ["health", "science"]
+for (const t of result.labels) {
+  console.log(`${t.label}: ${t.confidence}`);
+}
 ```
 
 </CodeGroup>
@@ -136,14 +146,13 @@ const result = await tag({
 <ResponseExample>
 ```json
 {
-  "tags": ["technology", "finance"],
-  "confidences": [0.7234, 0.4521],
-  "latency_ms": 156,
-  "usage": {
-    "prompt_tokens": 42,
-    "completion_tokens": 1,
-    "total_tokens": 43
-  }
+  "labels": [
+    {"label": "technology", "confidence": 0.95},
+    {"label": "finance", "confidence": 0.82}
+  ],
+  "tokens": 198,
+  "latency_ms": 112,
+  "cached": false
 }
 ```
 </ResponseExample>

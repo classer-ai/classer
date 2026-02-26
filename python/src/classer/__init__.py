@@ -1,23 +1,23 @@
 """Classer SDK - Low-cost, fast AI classification API."""
 
+from typing import Optional
+
 from .client import ClasserClient
 from .exceptions import ClasserError
 from .types import (
     ClassifyResponse,
-    MatchResponse,
-    ScoreResponse,
+    TagLabel,
     TagResponse,
-    Usage,
 )
 
 __all__ = [
     "ClasserClient",
     "ClasserError",
     "ClassifyResponse",
+    "TagLabel",
     "TagResponse",
-    "MatchResponse",
-    "ScoreResponse",
-    "Usage",
+    "classify",
+    "tag",
 ]
 
 # Default client instance
@@ -32,40 +32,23 @@ def _get_default_client() -> ClasserClient:
 
 
 def classify(
-    source: str,
-    labels: list[str],
-    descriptions: dict[str, str] | None = None,
-    model: str | None = None,
+    text: str,
+    labels: Optional[list[str]] = None,
+    classifier: Optional[str] = None,
+    descriptions: Optional[dict[str, str]] = None,
+    model: Optional[str] = None,
 ) -> ClassifyResponse:
-    """Classify text into one of the provided labels."""
-    return _get_default_client().classify(source, labels, descriptions, model)
+    """Classify text into one of the provided labels (single-label)."""
+    return _get_default_client().classify(text, labels, classifier, descriptions, model)
 
 
 def tag(
-    source: str,
-    labels: list[str],
-    descriptions: dict[str, str] | None = None,
-    threshold: float | None = None,
-    model: str | None = None,
+    text: str,
+    labels: Optional[list[str]] = None,
+    classifier: Optional[str] = None,
+    descriptions: Optional[dict[str, str]] = None,
+    model: Optional[str] = None,
+    threshold: Optional[float] = None,
 ) -> TagResponse:
-    """Tag text with multiple labels above a confidence threshold."""
-    return _get_default_client().tag(source, labels, descriptions, threshold, model)
-
-
-def match(
-    source: str,
-    query: str,
-    model: str | None = None,
-) -> MatchResponse:
-    """Calculate semantic similarity between source and query."""
-    return _get_default_client().match(source, query, model)
-
-
-def score(
-    source: str,
-    attribute: str,
-    description: str | None = None,
-    model: str | None = None,
-) -> ScoreResponse:
-    """Score text on a specific attribute (0-1 scale)."""
-    return _get_default_client().score(source, attribute, description, model)
+    """Tag text with multiple labels (multi-label)."""
+    return _get_default_client().tag(text, labels, classifier, descriptions, model, threshold)

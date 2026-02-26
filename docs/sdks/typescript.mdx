@@ -16,7 +16,7 @@ import { classify } from "classer-ai";
 
 // Uses CLASSER_API_KEY environment variable
 const result = await classify({
-  source: "I can't log in",
+  text: "I can't log in",
   labels: ["billing", "technical", "sales"]
 });
 
@@ -47,76 +47,69 @@ const client = new ClasserClient({
 
 ### classify()
 
-Single-label classification.
+Single-label classification — returns the one best-matching label.
 
 ```typescript
-const result = await classify({
-  source: "Text to classify",
-  labels: ["label1", "label2", "label3"],
-  descriptions: { label1: "Description" },  // optional
-  model: "model-name"  // optional
+const result = await client.classify({
+  text: "I can't log in to my account",
+  labels: ["billing", "technical", "sales"],
+  descriptions: {                             // optional
+    billing: "Payment or invoice issues",
+    technical: "Login, bugs, errors",
+    sales: "Pricing or plan questions",
+  },
+  model: "qwen",                              // optional (default: "qwen")
 });
 
-// Response
-result.label        // string
-result.confidence   // number
-result.latency_ms   // number
-result.usage        // Usage | undefined
+result.label        // "technical"
+result.confidence   // 0.94
+result.tokens       // 142
+result.latency_ms   // 87
+result.cached       // false
+```
+
+You can also reference a saved classifier instead of inline labels:
+
+```typescript
+const result = await client.classify({
+  text: "I can't log in",
+  classifier: "support-tickets",       // or "support-tickets@v2"
+});
 ```
 
 ### tag()
 
-Multi-label classification.
+Multi-label tagging — returns all labels that exceed the confidence threshold.
 
 ```typescript
-const result = await tag({
-  source: "Text to tag",
-  labels: ["label1", "label2", "label3"],
-  descriptions: { label1: "Description" },  // optional
-  threshold: 0.3,  // optional, default 0.3
-  model: "model-name"  // optional
+const result = await client.tag({
+  text: "Breaking: Tech stocks surge amid AI boom",
+  labels: ["politics", "technology", "finance", "sports"],
+  threshold: 0.3,                              // optional (default: 0.3)
+  descriptions: { technology: "Tech industry news" },  // optional
+  model: "qwen",                               // optional
 });
 
-// Response
-result.tags         // string[]
-result.confidences  // number[]
-result.latency_ms   // number
-result.usage        // Usage | undefined
+for (const t of result.labels) {
+  console.log(`${t.label}: ${t.confidence}`);
+}
+// technology: 0.92
+// finance: 0.78
+
+result.tokens       // 200
+result.latency_ms   // 203
+result.cached       // false
 ```
 
-### match()
+### Module-level functions
 
-Semantic similarity scoring.
-
-```typescript
-const result = await match({
-  source: "Document text",
-  query: "Search query",
-  model: "model-name"  // optional
-});
-
-// Response
-result.score        // number
-result.latency_ms   // number
-result.usage        // Usage | undefined
-```
-
-### score()
-
-Attribute scoring.
+Both methods are also available as top-level convenience functions that use a default client (reads `CLASSER_API_KEY` from the environment):
 
 ```typescript
-const result = await score({
-  source: "Text to score",
-  attribute: "urgency",
-  description: "How urgent is this",  // optional
-  model: "model-name"  // optional
-});
+import { classify, tag } from "classer-ai";
 
-// Response
-result.score        // number
-result.latency_ms   // number
-result.usage        // Usage | undefined
+const result = await classify({ text: "...", labels: ["a", "b"] });
+const tagged = await tag({ text: "...", labels: ["a", "b"], threshold: 0.5 });
 ```
 
 ## Error Handling
@@ -128,17 +121,25 @@ const client = new ClasserClient({ apiKey: "your-key" });
 
 try {
   const result = await client.classify({
-    source: "Hello",
+    text: "Hello",
     labels: ["greeting", "question"]
   });
 } catch (error) {
   if (error instanceof ClasserError) {
     console.log(`Error: ${error.message}`);
-    console.log(`Status: ${error.status}`);
-    console.log(`Detail: ${error.detail}`);
+    console.log(`Status: ${error.status}`);    // HTTP status code
+    console.log(`Detail: ${error.detail}`);    // Error detail from the API
   }
 }
 ```
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Bad request — invalid parameters |
+| `401` | Unauthorized — missing or invalid API key |
+| `402` | Insufficient balance |
+| `422` | Validation error |
+| `429` | Rate limit exceeded |
 
 ## Types
 
@@ -146,8 +147,9 @@ try {
 
 ```typescript
 interface ClassifyRequest {
-  source: string;
-  labels: string[];
+  text: string;
+  labels?: string[];
+  classifier?: string;
   descriptions?: Record<string, string>;
   model?: string;
 }
@@ -157,10 +159,11 @@ interface ClassifyRequest {
 
 ```typescript
 interface ClassifyResponse {
-  label: string;
-  confidence: number;
+  label?: string;
+  confidence?: number;
+  tokens: number;
   latency_ms: number;
-  usage?: Usage;
+  cached: boolean;
 }
 ```
 
@@ -168,11 +171,21 @@ interface ClassifyResponse {
 
 ```typescript
 interface TagRequest {
-  source: string;
-  labels: string[];
+  text: string;
+  labels?: string[];
+  classifier?: string;
   descriptions?: Record<string, string>;
-  threshold?: number;
   model?: string;
+  threshold?: number;  // default: 0.3
+}
+```
+
+### TagLabel
+
+```typescript
+interface TagLabel {
+  label: string;
+  confidence: number;
 }
 ```
 
@@ -180,61 +193,19 @@ interface TagRequest {
 
 ```typescript
 interface TagResponse {
-  tags: string[];
-  confidences: number[];
+  labels: TagLabel[];  // empty array when nothing matches
+  tokens: number;
   latency_ms: number;
-  usage?: Usage;
+  cached: boolean;
 }
 ```
 
-### MatchRequest
+### ClasserError
 
 ```typescript
-interface MatchRequest {
-  source: string;
-  query: string;
-  model?: string;
-}
-```
-
-### MatchResponse
-
-```typescript
-interface MatchResponse {
-  score: number;
-  latency_ms: number;
-  usage?: Usage;
-}
-```
-
-### ScoreRequest
-
-```typescript
-interface ScoreRequest {
-  source: string;
-  attribute: string;
-  description?: string;
-  model?: string;
-}
-```
-
-### ScoreResponse
-
-```typescript
-interface ScoreResponse {
-  score: number;
-  latency_ms: number;
-  usage?: Usage;
-}
-```
-
-### Usage
-
-```typescript
-interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
+class ClasserError extends Error {
+  status?: number;
+  detail?: string;
 }
 ```
 

@@ -1,71 +1,59 @@
 // Types
-export interface Usage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-}
-
 export interface ClassifyRequest {
   /** Text to classify */
-  source: string;
-  /** List of possible labels (1-26) */
-  labels: string[];
-  /** Maps label name to description for better accuracy. E.g., { "hot": "Ready to buy, asking for pricing" } */
+  text: string;
+  /** List of possible labels (1-100) */
+  labels?: string[];
+  /** Saved classifier name or "name@vN" reference */
+  classifier?: string;
+  /** Maps label name to description for better accuracy */
   descriptions?: Record<string, string>;
   /** Model override */
   model?: string;
 }
 
 export interface ClassifyResponse {
-  label: string;
-  confidence: number;
+  /** Selected label */
+  label?: string;
+  /** Confidence score */
+  confidence?: number;
+  /** Total tokens used */
+  tokens: number;
+  /** Processing time in milliseconds */
   latency_ms: number;
-  usage?: Usage;
+  /** Whether the response was served from cache */
+  cached: boolean;
 }
 
 export interface TagRequest {
   /** Text to tag */
-  source: string;
+  text: string;
   /** List of possible labels (2-26) */
-  labels: string[];
-  /** Maps label name to description for better accuracy. E.g., { "urgent": "Needs immediate attention" } */
+  labels?: string[];
+  /** Saved classifier name or "name@vN" reference */
+  classifier?: string;
+  /** Maps label name to description for better accuracy */
   descriptions?: Record<string, string>;
-  /** Minimum confidence threshold (0-1). Default: 0.3 */
-  threshold?: number;
   /** Model override */
   model?: string;
+  /** Confidence threshold (0-1). Default: 0.3 */
+  threshold?: number;
+}
+
+export interface TagLabel {
+  label: string;
+  confidence: number;
 }
 
 export interface TagResponse {
-  tags: string[];
-  confidences: number[];
+  /** Labels above threshold, each with label and confidence */
+  labels: TagLabel[];
+  /** Total tokens used */
+  tokens: number;
+  /** Processing time in milliseconds */
   latency_ms: number;
-  usage?: Usage;
-}
-
-export interface MatchRequest {
-  source: string;
-  query: string;
-  model?: string;
-}
-
-export interface MatchResponse {
-  score: number;
-  latency_ms: number;
-  usage?: Usage;
-}
-
-export interface ScoreRequest {
-  source: string;
-  attribute: string;
-  description?: string;
-  model?: string;
-}
-
-export interface ScoreResponse {
-  score: number;
-  latency_ms: number;
-  usage?: Usage;
+  /** Whether the response was served from cache */
+  cached: boolean;
 }
 
 export interface ClasserConfig {
@@ -92,7 +80,7 @@ class ClasserClient {
 
   constructor(config: ClasserConfig = {}) {
     this.apiKey = config.apiKey || process.env.CLASSER_API_KEY || "";
-    this.baseUrl = config.baseUrl || process.env.CLASSER_BASE_URL || "https://api.classer.ai";
+    this.baseUrl = config.baseUrl || "https://api.classer.ai";
   }
 
   private async request<T>(endpoint: string, body: unknown): Promise<T> {
@@ -131,12 +119,12 @@ class ClasserClient {
   }
 
   /**
-   * Classify text into one of the provided labels.
+   * Classify text into one of the provided labels (single-label).
    *
    * @example
    * ```ts
    * const result = await classer.classify({
-   *   source: "I can't log in",
+   *   text: "I can't log in",
    *   labels: ["billing", "technical_support", "sales"]
    * });
    * console.log(result.label); // "technical_support"
@@ -147,52 +135,22 @@ class ClasserClient {
   }
 
   /**
-   * Tag text with multiple labels above a confidence threshold.
+   * Tag text with multiple labels that exceed a confidence threshold (multi-label).
    *
    * @example
    * ```ts
    * const result = await classer.tag({
-   *   source: "Breaking: Tech stocks surge amid AI boom",
+   *   text: "Breaking: Tech stocks surge amid AI boom",
    *   labels: ["politics", "technology", "finance", "sports"],
    *   threshold: 0.3
    * });
-   * console.log(result.tags); // ["technology", "finance"]
+   * for (const tag of result.labels) {
+   *   console.log(`${tag.label}: ${tag.confidence}`);
+   * }
    * ```
    */
   async tag(request: TagRequest): Promise<TagResponse> {
     return this.request<TagResponse>("/v1/tag", request);
-  }
-
-  /**
-   * Calculate semantic similarity between source and query (for RAG retrieval).
-   *
-   * @example
-   * ```ts
-   * const result = await classer.match({
-   *   source: "Our return policy allows refunds within 30 days.",
-   *   query: "Can I get a refund?"
-   * });
-   * console.log(result.score); // 0.95
-   * ```
-   */
-  async match(request: MatchRequest): Promise<MatchResponse> {
-    return this.request<MatchResponse>("/v1/match", request);
-  }
-
-  /**
-   * Score text on a specific attribute (0-1 scale).
-   *
-   * @example
-   * ```ts
-   * const result = await classer.score({
-   *   source: "This is URGENT! We need help immediately!",
-   *   attribute: "urgency"
-   * });
-   * console.log(result.score); // 0.92
-   * ```
-   */
-  async score(request: ScoreRequest): Promise<ScoreResponse> {
-    return this.request<ScoreResponse>("/v1/score", request);
   }
 }
 
@@ -204,8 +162,6 @@ export { ClasserClient, ClasserError };
 
 export const classify = (request: ClassifyRequest) => defaultClient.classify(request);
 export const tag = (request: TagRequest) => defaultClient.tag(request);
-export const match = (request: MatchRequest) => defaultClient.match(request);
-export const score = (request: ScoreRequest) => defaultClient.score(request);
 
 // Default export for `import Classer from "classer"`
 export default {
@@ -213,6 +169,4 @@ export default {
   ClasserError,
   classify: (request: ClassifyRequest) => defaultClient.classify(request),
   tag: (request: TagRequest) => defaultClient.tag(request),
-  match: (request: MatchRequest) => defaultClient.match(request),
-  score: (request: ScoreRequest) => defaultClient.score(request),
 };

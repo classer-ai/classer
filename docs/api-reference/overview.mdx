@@ -13,10 +13,10 @@ https://api.classer.ai
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/v1/classify` | Single-label classification |
-| POST | `/v1/tag` | Multi-label classification |
-| POST | `/v1/match` | Semantic similarity scoring |
-| POST | `/v1/score` | Attribute scoring |
+| POST | [`/v1/classify`](/api-reference/classify) | Single-label classification |
+| POST | [`/v1/tag`](/api-reference/tag) | Multi-label tagging |
+| POST | `/v1/classify/batch` | Batch single-label classification (up to 1000 texts) |
+| POST | `/v1/tag/batch` | Batch multi-label tagging (up to 1000 texts) |
 
 ## Authentication
 
@@ -25,6 +25,8 @@ All requests require a Bearer token in the `Authorization` header:
 ```bash
 Authorization: Bearer your-api-key
 ```
+
+See [Authentication](/authentication) for details.
 
 ## Request format
 
@@ -36,16 +38,21 @@ All responses include:
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `tokens` | number | Total tokens used |
 | `latency_ms` | number | Processing time in milliseconds |
-| `usage` | object | Token usage (optional) |
+| `cached` | boolean | Whether the response was served from cache |
 
-### Usage object
+Plus endpoint-specific fields (`label`, `confidence`, `labels`, etc.).
+
+### Example response
 
 ```json
 {
-  "prompt_tokens": 42,
-  "completion_tokens": 1,
-  "total_tokens": 43
+  "label": "technical",
+  "confidence": 0.9423,
+  "tokens": 142,
+  "latency_ms": 87,
+  "cached": false
 }
 ```
 
@@ -61,14 +68,29 @@ All responses include:
 |--------|-------------|
 | `400` | Bad request — invalid parameters |
 | `401` | Unauthorized — missing or invalid API key |
+| `402` | Insufficient balance |
 | `422` | Validation error — check request body |
 | `429` | Rate limit exceeded |
 | `500` | Internal server error |
 
+## Speed tiers
+
+All endpoints accept a `speed` parameter that controls latency and pricing.
+
+| Speed | Latency | Per 1M tokens |
+|-------|---------|---------------|
+| `fast` (default) | <200ms | $0.60 |
+| `standard` | <1s | $0.20 |
+| `batch` | Async | $0.08 |
+
+Every account gets **5M free tokens/month** on the standard tier.
+
 ## Rate limits
 
-| Plan | Requests/minute |
-|------|-----------------|
-| Free | 60 |
-| Pro | 600 |
-| Enterprise | Unlimited |
+Rate limits depend on the tier configured for your API key.
+
+| Tier | Requests/min | Tokens/min | Concurrent |
+|------|-------------|------------|------------|
+| Developer | 60 | 100,000 | 10 |
+| Production | 600 | 1,000,000 | 100 |
+| Enterprise | Custom | Custom | Custom |

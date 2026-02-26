@@ -31,7 +31,9 @@ npm install classer-ai
 
 </CodeGroup>
 
-## 3. Make your first call
+## 3. Classify text
+
+Pick the single best label for a piece of text.
 
 <CodeGroup>
 
@@ -39,109 +41,123 @@ npm install classer-ai
 import classer
 import os
 
-# Set your API key
 os.environ["CLASSER_API_KEY"] = "your-api-key"
 
-# Classify text
 result = classer.classify(
-    source="I need help resetting my password",
+    text="I need help resetting my password",
     labels=["billing", "technical", "sales"]
 )
 
-print(f"Label: {result.label}")
-print(f"Confidence: {result.confidence}")
+print(f"Label: {result.label}")           # "technical"
+print(f"Confidence: {result.confidence}")  # 0.94
 ```
 
 ```typescript TypeScript
 import { classify } from "classer-ai";
 
-// Set your API key
 process.env.CLASSER_API_KEY = "your-api-key";
 
-// Classify text
 const result = await classify({
-  source: "I need help resetting my password",
+  text: "I need help resetting my password",
   labels: ["billing", "technical", "sales"]
 });
 
-console.log(`Label: ${result.label}`);
-console.log(`Confidence: ${result.confidence}`);
+console.log(`Label: ${result.label}`);           // "technical"
+console.log(`Confidence: ${result.confidence}`);  // 0.94
+```
+
+```bash cURL
+curl -X POST https://api.classer.ai/v1/classify \
+  -H "Authorization: Bearer $CLASSER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "I need help resetting my password",
+    "labels": ["billing", "technical", "sales"]
+  }'
 ```
 
 </CodeGroup>
 
-## 4. Try other endpoints
+## 4. Tag with multiple labels
 
-### Multi-label tagging
+Return all labels that match above a confidence threshold.
 
 <CodeGroup>
 
 ```python Python
 result = classer.tag(
-    source="Breaking: Tech stocks surge amid AI boom",
+    text="Breaking: Tech stocks surge amid AI boom",
     labels=["politics", "technology", "finance", "sports"],
     threshold=0.3
 )
 
-print(result.tags)  # ["technology", "finance"]
+for t in result.labels:
+    print(f"{t.label}: {t.confidence}")
+# technology: 0.92
+# finance: 0.78
 ```
 
 ```typescript TypeScript
+import { tag } from "classer-ai";
+
 const result = await tag({
-  source: "Breaking: Tech stocks surge amid AI boom",
+  text: "Breaking: Tech stocks surge amid AI boom",
   labels: ["politics", "technology", "finance", "sports"],
   threshold: 0.3
 });
 
-console.log(result.tags);  // ["technology", "finance"]
+for (const t of result.labels) {
+  console.log(`${t.label}: ${t.confidence}`);
+}
+// technology: 0.92
+// finance: 0.78
+```
+
+```bash cURL
+curl -X POST https://api.classer.ai/v1/tag \
+  -H "Authorization: Bearer $CLASSER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Breaking: Tech stocks surge amid AI boom",
+    "labels": ["politics", "technology", "finance", "sports"],
+    "threshold": 0.3
+  }'
 ```
 
 </CodeGroup>
 
-### RAG relevance scoring
+## 5. Use descriptions for better accuracy
+
+Add label descriptions when labels are ambiguous.
 
 <CodeGroup>
 
 ```python Python
-result = classer.match(
-    source="Our return policy allows refunds within 30 days.",
-    query="Can I get a refund?"
+result = classer.classify(
+    text="We need a solution for 500 users, what's your enterprise pricing?",
+    labels=["hot", "warm", "cold"],
+    descriptions={
+        "hot": "Ready to buy, asking for pricing or demo",
+        "warm": "Interested but exploring options",
+        "cold": "Just browsing, no clear intent"
+    }
 )
 
-print(result.score)  # 0.95
+print(result.label)  # "hot"
 ```
 
 ```typescript TypeScript
-const result = await match({
-  source: "Our return policy allows refunds within 30 days.",
-  query: "Can I get a refund?"
+const result = await classify({
+  text: "We need a solution for 500 users, what's your enterprise pricing?",
+  labels: ["hot", "warm", "cold"],
+  descriptions: {
+    hot: "Ready to buy, asking for pricing or demo",
+    warm: "Interested but exploring options",
+    cold: "Just browsing, no clear intent"
+  }
 });
 
-console.log(result.score);  // 0.95
-```
-
-</CodeGroup>
-
-### Attribute scoring
-
-<CodeGroup>
-
-```python Python
-result = classer.score(
-    source="This is URGENT! System is down!",
-    attribute="urgency"
-)
-
-print(result.score)  # 0.92
-```
-
-```typescript TypeScript
-const result = await score({
-  source: "This is URGENT! System is down!",
-  attribute: "urgency"
-});
-
-console.log(result.score);  // 0.92
+console.log(result.label);  // "hot"
 ```
 
 </CodeGroup>
@@ -154,5 +170,8 @@ console.log(result.score);  // 0.92
   </Card>
   <Card title="Python SDK" icon="python" href="/sdks/python">
     Python SDK reference
+  </Card>
+  <Card title="TypeScript SDK" icon="js" href="/sdks/typescript">
+    TypeScript SDK reference
   </Card>
 </CardGroup>

@@ -58,9 +58,7 @@
       "pages": [
         "api-reference/overview",
         "api-reference/classify",
-        "api-reference/tag",
-        "api-reference/match",
-        "api-reference/score"
+        "api-reference/tag"
       ]
     }
   ],

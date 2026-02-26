@@ -4,16 +4,11 @@ import {
   ClasserError,
   classify,
   tag,
-  match,
-  score,
   type ClassifyRequest,
   type ClassifyResponse,
   type TagRequest,
   type TagResponse,
-  type MatchRequest,
-  type MatchResponse,
-  type ScoreRequest,
-  type ScoreResponse,
+  type TagLabel,
 } from "./index";
 
 // Mock fetch globally
@@ -52,6 +47,18 @@ describe("ClasserClient", () => {
 
       process.env.CLASSER_API_KEY = originalEnv;
     });
+
+    it("should use default base URL when none provided", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
+      });
+
+      const client = new ClasserClient({ apiKey: "test-key" });
+      await client.classify({ text: "test", labels: ["a", "b"] });
+
+      expect(mockFetch.mock.calls[0][0]).toBe("https://api.classer.ai/v1/classify");
+    });
   });
 
   describe("classify", () => {
@@ -59,7 +66,9 @@ describe("ClasserClient", () => {
       const mockResponse: ClassifyResponse = {
         label: "technical_support",
         confidence: 0.94,
+        tokens: 101,
         latency_ms: 45,
+        cached: false,
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -69,7 +78,7 @@ describe("ClasserClient", () => {
 
       const client = new ClasserClient({ apiKey: "test-key" });
       const result = await client.classify({
-        source: "I can't log in",
+        text: "I can't log in",
         labels: ["billing", "technical_support", "sales"],
       });
 
@@ -87,33 +96,77 @@ describe("ClasserClient", () => {
     });
 
     it("should include descriptions when provided", async () => {
-      const mockResponse: ClassifyResponse = {
-        label: "hot",
-        confidence: 0.92,
-        latency_ms: 38,
-      };
-
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
+        json: async () => ({ label: "hot", confidence: 0.92, latency_ms: 38 }),
       });
 
       const client = new ClasserClient({ apiKey: "test-key" });
-      const request: ClassifyRequest = {
-        source: "I need enterprise pricing for 500 users",
+      await client.classify({
+        text: "I need enterprise pricing for 500 users",
         labels: ["hot", "warm", "cold"],
         descriptions: {
           hot: "Ready to buy",
           warm: "Interested but exploring",
           cold: "Just browsing",
         },
-      };
+      });
 
-      await client.classify(request);
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.descriptions).toEqual({
+        hot: "Ready to buy",
+        warm: "Interested but exploring",
+        cold: "Just browsing",
+      });
+    });
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
-      expect(body.descriptions).toEqual(request.descriptions);
+    it("should send classifier instead of labels when provided", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ label: "billing", confidence: 0.88, latency_ms: 42 }),
+      });
+
+      const client = new ClasserClient({ apiKey: "test-key" });
+      const result = await client.classify({
+        text: "test",
+        classifier: "support-tickets@v2",
+      });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.classifier).toBe("support-tickets@v2");
+      expect(body.labels).toBeUndefined();
+      expect(result.label).toBe("billing");
+    });
+
+    it("should send model when provided", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
+      });
+
+      const client = new ClasserClient({ apiKey: "test-key" });
+      await client.classify({
+        text: "test",
+        labels: ["a", "b"],
+        model: "openai/gpt-4o-mini",
+      });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.model).toBe("openai/gpt-4o-mini");
+    });
+
+    it("should not send mode or threshold", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
+      });
+
+      const client = new ClasserClient({ apiKey: "test-key" });
+      await client.classify({ text: "test", labels: ["a", "b"] });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.mode).toBeUndefined();
+      expect(body.threshold).toBeUndefined();
     });
 
     it("should handle API errors", async () => {
@@ -126,10 +179,7 @@ describe("ClasserClient", () => {
       const client = new ClasserClient({ apiKey: "test-key" });
 
       await expect(
-        client.classify({
-          source: "test",
-          labels: [],
-        })
+        client.classify({ text: "test", labels: [] })
       ).rejects.toThrow(ClasserError);
     });
 
@@ -139,10 +189,7 @@ describe("ClasserClient", () => {
       const client = new ClasserClient({ apiKey: "test-key" });
 
       await expect(
-        client.classify({
-          source: "test",
-          labels: ["a", "b"],
-        })
+        client.classify({ text: "test", labels: ["a", "b"] })
       ).rejects.toThrow("Network error");
     });
   });
@@ -150,9 +197,13 @@ describe("ClasserClient", () => {
   describe("tag", () => {
     it("should tag text with multiple labels", async () => {
       const mockResponse: TagResponse = {
-        tags: ["technology", "finance"],
-        confidences: [0.65, 0.42],
+        labels: [
+          { label: "technology", confidence: 0.65 },
+          { label: "finance", confidence: 0.42 },
+        ],
+        tokens: 200,
         latency_ms: 52,
+        cached: false,
       };
 
       mockFetch.mockResolvedValueOnce({
@@ -162,193 +213,184 @@ describe("ClasserClient", () => {
 
       const client = new ClasserClient({ apiKey: "test-key" });
       const result = await client.tag({
-        source: "Tech stocks surge amid AI boom",
+        text: "Tech stocks surge amid AI boom",
         labels: ["politics", "technology", "finance", "sports"],
         threshold: 0.3,
       });
 
-      expect(result).toEqual(mockResponse);
-      expect(result.tags).toContain("technology");
-      expect(result.tags).toContain("finance");
+      expect(result.labels).toHaveLength(2);
+      expect(result.labels[0].label).toBe("technology");
+      expect(result.labels[0].confidence).toBe(0.65);
+      expect(result.labels[1].label).toBe("finance");
+      expect(result.latency_ms).toBe(52);
+
+      expect(mockFetch.mock.calls[0][0]).toBe("https://api.classer.ai/v1/tag");
     });
 
-    it("should use default threshold when not provided", async () => {
-      const mockResponse: TagResponse = {
-        tags: ["technology"],
-        confidences: [0.85],
-        latency_ms: 48,
-      };
-
+    it("should send threshold when provided", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
+        json: async () => ({
+          labels: [{ label: "technology", confidence: 0.85 }],
+          latency_ms: 48,
+        }),
       });
 
       const client = new ClasserClient({ apiKey: "test-key" });
       await client.tag({
-        source: "AI is transforming industries",
+        text: "AI is transforming industries",
         labels: ["technology", "sports"],
+        threshold: 0.5,
       });
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
-      expect(body.threshold).toBeUndefined(); // Server uses default
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.threshold).toBe(0.5);
     });
 
-    it("should return empty tags when nothing matches threshold", async () => {
-      const mockResponse: TagResponse = {
-        tags: [],
-        confidences: [],
-        latency_ms: 35,
-      };
-
+    it("should omit threshold when not provided", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
+        json: async () => ({
+          labels: [{ label: "a", confidence: 0.8 }],
+          latency_ms: 30,
+        }),
+      });
+
+      const client = new ClasserClient({ apiKey: "test-key" });
+      await client.tag({ text: "test", labels: ["a", "b"] });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.threshold).toBeUndefined();
+    });
+
+    it("should not send mode in the request body", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          labels: [{ label: "a", confidence: 0.8 }],
+          latency_ms: 30,
+        }),
+      });
+
+      const client = new ClasserClient({ apiKey: "test-key" });
+      await client.tag({ text: "test", labels: ["a", "b"] });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.mode).toBeUndefined();
+    });
+
+    it("should return empty labels when nothing matches", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ labels: [], latency_ms: 35 }),
       });
 
       const client = new ClasserClient({ apiKey: "test-key" });
       const result = await client.tag({
-        source: "Random unrelated text",
+        text: "Random unrelated text",
         labels: ["sports", "politics"],
         threshold: 0.9,
       });
 
-      expect(result.tags).toHaveLength(0);
+      expect(result.labels).toHaveLength(0);
     });
-  });
 
-  describe("match", () => {
-    it("should return high score for relevant content", async () => {
-      const mockResponse: MatchResponse = {
-        score: 0.98,
-        latency_ms: 42,
-      };
-
+    it("should send classifier instead of labels when provided", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
+        json: async () => ({
+          labels: [{ label: "urgent", confidence: 0.91 }],
+          latency_ms: 55,
+        }),
       });
 
       const client = new ClasserClient({ apiKey: "test-key" });
-      const result = await client.match({
-        source: "Our return policy allows refunds within 30 days.",
-        query: "Can I get a refund?",
+      const result = await client.tag({
+        text: "test",
+        classifier: "priority-tagger",
       });
 
-      expect(result.score).toBeGreaterThan(0.9);
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.classifier).toBe("priority-tagger");
+      expect(body.labels).toBeUndefined();
+      expect(result.labels[0].label).toBe("urgent");
     });
 
-    it("should return low score for irrelevant content", async () => {
-      const mockResponse: MatchResponse = {
-        score: 0.05,
-        latency_ms: 38,
-      };
-
+    it("should send descriptions when provided", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
+        json: async () => ({
+          labels: [{ label: "tech", confidence: 0.85 }],
+          latency_ms: 40,
+        }),
       });
 
       const client = new ClasserClient({ apiKey: "test-key" });
-      const result = await client.match({
-        source: "The weather is sunny today.",
-        query: "How do I reset my password?",
+      await client.tag({
+        text: "test",
+        labels: ["tech", "sports"],
+        descriptions: { tech: "Technology news", sports: "Sports news" },
       });
 
-      expect(result.score).toBeLessThan(0.2);
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.descriptions).toEqual({
+        tech: "Technology news",
+        sports: "Sports news",
+      });
     });
 
-    it("should send correct request body", async () => {
-      const mockResponse: MatchResponse = {
-        score: 0.75,
-        latency_ms: 40,
-      };
-
+    it("should send model when provided", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
+        json: async () => ({
+          labels: [{ label: "a", confidence: 0.8 }],
+          latency_ms: 30,
+        }),
       });
 
       const client = new ClasserClient({ apiKey: "test-key" });
-      const request: MatchRequest = {
-        source: "Document content here",
-        query: "Search query",
-      };
+      await client.tag({
+        text: "test",
+        labels: ["a", "b"],
+        model: "openai/gpt-4o-mini",
+      });
 
-      await client.match(request);
-
-      const fetchCall = mockFetch.mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
-      expect(body.source).toBe(request.source);
-      expect(body.query).toBe(request.query);
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.model).toBe("openai/gpt-4o-mini");
     });
-  });
 
-  describe("score", () => {
-    it("should score text on urgency", async () => {
-      const mockResponse: ScoreResponse = {
-        score: 0.92,
-        latency_ms: 35,
-      };
-
+    it("should handle API errors", async () => {
       mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
+        ok: false,
+        status: 422,
+        json: async () => ({ detail: "At least 2 labels required" }),
       });
 
       const client = new ClasserClient({ apiKey: "test-key" });
-      const result = await client.score({
-        source: "URGENT! System is down! Need immediate help!",
-        attribute: "urgency",
-      });
 
-      expect(result.score).toBeGreaterThan(0.8);
+      try {
+        await client.tag({ text: "test", labels: ["only_one"] });
+        expect.fail("Should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ClasserError);
+        expect((error as ClasserError).status).toBe(422);
+        expect((error as ClasserError).detail).toBe("At least 2 labels required");
+      }
     });
 
-    it("should score text on toxicity", async () => {
-      const mockResponse: ScoreResponse = {
-        score: 0.15,
-        latency_ms: 32,
-      };
-
+    it("should use correct endpoint with custom base URL", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockResponse,
+        json: async () => ({
+          labels: [{ label: "a", confidence: 0.9 }],
+          latency_ms: 30,
+        }),
       });
 
-      const client = new ClasserClient({ apiKey: "test-key" });
-      const result = await client.score({
-        source: "Thank you for your help, I appreciate it!",
-        attribute: "toxicity",
-      });
+      const client = new ClasserClient({ baseUrl: "https://custom.classer.ai" });
+      await client.tag({ text: "test", labels: ["a", "b"] });
 
-      expect(result.score).toBeLessThan(0.3);
-    });
-
-    it("should include description when provided", async () => {
-      const mockResponse: ScoreResponse = {
-        score: 0.65,
-        latency_ms: 40,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      });
-
-      const client = new ClasserClient({ apiKey: "test-key" });
-      const request: ScoreRequest = {
-        source: "This product is okay, nothing special.",
-        attribute: "satisfaction",
-        description: "Customer satisfaction level",
-      };
-
-      await client.score(request);
-
-      const fetchCall = mockFetch.mock.calls[0];
-      const body = JSON.parse(fetchCall[1].body);
-      expect(body.description).toBe(request.description);
+      expect(mockFetch.mock.calls[0][0]).toBe("https://custom.classer.ai/v1/tag");
     });
   });
 });
@@ -359,19 +401,13 @@ describe("Default exports", () => {
   });
 
   it("classify function should work", async () => {
-    const mockResponse: ClassifyResponse = {
-      label: "greeting",
-      confidence: 0.95,
-      latency_ms: 30,
-    };
-
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => mockResponse,
+      json: async () => ({ label: "greeting", confidence: 0.95, latency_ms: 30 }),
     });
 
     const result = await classify({
-      source: "Hello there!",
+      text: "Hello there!",
       labels: ["greeting", "question", "complaint"],
     });
 
@@ -379,65 +415,33 @@ describe("Default exports", () => {
   });
 
   it("tag function should work", async () => {
-    const mockResponse: TagResponse = {
-      tags: ["news", "technology"],
-      confidences: [0.8, 0.6],
-      latency_ms: 45,
-    };
-
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => mockResponse,
+      json: async () => ({
+        labels: [
+          { label: "news", confidence: 0.8 },
+          { label: "technology", confidence: 0.6 },
+        ],
+        latency_ms: 45,
+      }),
     });
 
     const result = await tag({
-      source: "Apple announces new iPhone",
+      text: "Apple announces new iPhone",
       labels: ["news", "technology", "sports"],
     });
 
-    expect(result.tags).toContain("news");
-  });
-
-  it("match function should work", async () => {
-    const mockResponse: MatchResponse = {
-      score: 0.88,
-      latency_ms: 38,
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
-    const result = await match({
-      source: "Python is a programming language",
-      query: "What programming languages exist?",
-    });
-
-    expect(result.score).toBeGreaterThan(0.5);
-  });
-
-  it("score function should work", async () => {
-    const mockResponse: ScoreResponse = {
-      score: 0.25,
-      latency_ms: 33,
-    };
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
-    const result = await score({
-      source: "The meeting is scheduled for next week",
-      attribute: "urgency",
-    });
-
-    expect(result.score).toBeLessThan(0.5);
+    expect(result.labels).toHaveLength(2);
+    expect(result.labels[0].label).toBe("news");
+    expect(result.labels[0].confidence).toBe(0.8);
   });
 });
 
 describe("ClasserError", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
   it("should contain status and detail", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
@@ -448,10 +452,7 @@ describe("ClasserError", () => {
     const client = new ClasserClient({ apiKey: "test-key" });
 
     try {
-      await client.classify({
-        source: "",
-        labels: ["a"],
-      });
+      await client.classify({ text: "", labels: ["a"] });
       expect.fail("Should have thrown");
     } catch (error) {
       expect(error).toBeInstanceOf(ClasserError);
@@ -464,24 +465,34 @@ describe("ClasserError", () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 500,
-      json: async () => {
-        throw new Error("Invalid JSON");
-      },
+      json: async () => { throw new Error("Invalid JSON"); },
     });
 
     const client = new ClasserClient({ apiKey: "test-key" });
 
     try {
-      await client.classify({
-        source: "test",
-        labels: ["a", "b"],
-      });
+      await client.classify({ text: "test", labels: ["a", "b"] });
       expect.fail("Should have thrown");
     } catch (error) {
       expect(error).toBeInstanceOf(ClasserError);
       expect((error as ClasserError).status).toBe(500);
       expect((error as ClasserError).detail).toBeUndefined();
     }
+  });
+
+  it("should have name ClasserError", () => {
+    const err = new ClasserError("test", 400, "detail");
+    expect(err.name).toBe("ClasserError");
+    expect(err.message).toBe("test");
+    expect(err.status).toBe(400);
+    expect(err.detail).toBe("detail");
+  });
+
+  it("should be an instance of Error", () => {
+    const err = new ClasserError("test");
+    expect(err).toBeInstanceOf(Error);
+    expect(err.status).toBeUndefined();
+    expect(err.detail).toBeUndefined();
   });
 });
 
@@ -497,10 +508,9 @@ describe("Request headers", () => {
     });
 
     const client = new ClasserClient({ apiKey: "my-secret-key" });
-    await client.classify({ source: "test", labels: ["a", "b"] });
+    await client.classify({ text: "test", labels: ["a", "b"] });
 
-    const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers.Authorization).toBe("Bearer my-secret-key");
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe("Bearer my-secret-key");
   });
 
   it("should not include Authorization header when API key is empty", async () => {
@@ -513,10 +523,9 @@ describe("Request headers", () => {
     });
 
     const client = new ClasserClient({ apiKey: "" });
-    await client.classify({ source: "test", labels: ["a", "b"] });
+    await client.classify({ text: "test", labels: ["a", "b"] });
 
-    const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers.Authorization).toBeUndefined();
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBeUndefined();
 
     process.env.CLASSER_API_KEY = originalEnv;
   });
@@ -528,10 +537,9 @@ describe("Request headers", () => {
     });
 
     const client = new ClasserClient();
-    await client.classify({ source: "test", labels: ["a", "b"] });
+    await client.classify({ text: "test", labels: ["a", "b"] });
 
-    const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[1].headers["Content-Type"]).toBe("application/json");
+    expect(mockFetch.mock.calls[0][1].headers["Content-Type"]).toBe("application/json");
   });
 });
 
@@ -540,36 +548,30 @@ describe("Custom base URL", () => {
     mockFetch.mockReset();
   });
 
-  it("should use custom base URL", async () => {
+  it("should use custom base URL for classify", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
     });
 
-    const client = new ClasserClient({
-      baseUrl: "https://custom.classer.ai",
-    });
-    await client.classify({ source: "test", labels: ["a", "b"] });
+    const client = new ClasserClient({ baseUrl: "https://custom.classer.ai" });
+    await client.classify({ text: "test", labels: ["a", "b"] });
 
-    const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[0]).toBe("https://custom.classer.ai/v1/classify");
+    expect(mockFetch.mock.calls[0][0]).toBe("https://custom.classer.ai/v1/classify");
   });
 
-  it("should read base URL from environment", async () => {
-    const originalEnv = process.env.CLASSER_BASE_URL;
-    process.env.CLASSER_BASE_URL = "https://env.classer.ai";
-
+  it("should use custom base URL for tag", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
+      json: async () => ({
+        labels: [{ label: "a", confidence: 0.9 }],
+        latency_ms: 30,
+      }),
     });
 
-    const client = new ClasserClient();
-    await client.classify({ source: "test", labels: ["a", "b"] });
+    const client = new ClasserClient({ baseUrl: "https://custom.classer.ai" });
+    await client.tag({ text: "test", labels: ["a", "b"] });
 
-    const fetchCall = mockFetch.mock.calls[0];
-    expect(fetchCall[0]).toBe("https://env.classer.ai/v1/classify");
-
-    process.env.CLASSER_BASE_URL = originalEnv;
+    expect(mockFetch.mock.calls[0][0]).toBe("https://custom.classer.ai/v1/tag");
   });
 });

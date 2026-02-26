@@ -23,10 +23,7 @@ __export(index_exports, {
   ClasserClient: () => ClasserClient,
   ClasserError: () => ClasserError,
   classify: () => classify,
-  default: () => index_default,
-  match: () => match,
-  score: () => score,
-  tag: () => tag
+  default: () => index_default
 });
 module.exports = __toCommonJS(index_exports);
 var ClasserError = class extends Error {
@@ -71,86 +68,48 @@ var ClasserClient = class {
     return response.json();
   }
   /**
-   * Classify text into one of the provided labels.
+   * Classify text into one or more of the provided labels.
    *
    * @example
    * ```ts
+   * // Single-label classification (default)
    * const result = await classer.classify({
-   *   source: "I can't log in",
+   *   text: "I can't log in",
    *   labels: ["billing", "technical_support", "sales"]
    * });
    * console.log(result.label); // "technical_support"
+   *
+   * // Using a saved classifier
+   * const result = await classer.classify({
+   *   text: "I can't log in",
+   *   classifier: "support-tickets"
+   * });
+   * console.log(result.label); // "technical_support"
+   *
+   * // Multi-label classification
+   * const result = await classer.classify({
+   *   text: "Breaking: Tech stocks surge amid AI boom",
+   *   labels: ["politics", "technology", "finance", "sports"],
+   *   mode: "multi",
+   *   threshold: 0.3
+   * });
+   * console.log(result.labels); // ["technology", "finance"]
    * ```
    */
   async classify(request) {
     return this.request("/v1/classify", request);
   }
-  /**
-   * Tag text with multiple labels above a confidence threshold.
-   *
-   * @example
-   * ```ts
-   * const result = await classer.tag({
-   *   source: "Breaking: Tech stocks surge amid AI boom",
-   *   labels: ["politics", "technology", "finance", "sports"],
-   *   threshold: 0.3
-   * });
-   * console.log(result.tags); // ["technology", "finance"]
-   * ```
-   */
-  async tag(request) {
-    return this.request("/v1/tag", request);
-  }
-  /**
-   * Calculate semantic similarity between source and query (for RAG retrieval).
-   *
-   * @example
-   * ```ts
-   * const result = await classer.match({
-   *   source: "Our return policy allows refunds within 30 days.",
-   *   query: "Can I get a refund?"
-   * });
-   * console.log(result.score); // 0.95
-   * ```
-   */
-  async match(request) {
-    return this.request("/v1/match", request);
-  }
-  /**
-   * Score text on a specific attribute (0-1 scale).
-   *
-   * @example
-   * ```ts
-   * const result = await classer.score({
-   *   source: "This is URGENT! We need help immediately!",
-   *   attribute: "urgency"
-   * });
-   * console.log(result.score); // 0.92
-   * ```
-   */
-  async score(request) {
-    return this.request("/v1/score", request);
-  }
 };
 var defaultClient = new ClasserClient();
 var classify = (request) => defaultClient.classify(request);
-var tag = (request) => defaultClient.tag(request);
-var match = (request) => defaultClient.match(request);
-var score = (request) => defaultClient.score(request);
 var index_default = {
   ClasserClient,
   ClasserError,
-  classify: (request) => defaultClient.classify(request),
-  tag: (request) => defaultClient.tag(request),
-  match: (request) => defaultClient.match(request),
-  score: (request) => defaultClient.score(request)
+  classify: (request) => defaultClient.classify(request)
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ClasserClient,
   ClasserError,
-  classify,
-  match,
-  score,
-  tag
+  classify
 });

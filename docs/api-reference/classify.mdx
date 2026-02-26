@@ -6,12 +6,12 @@ description: "Classify text into exactly one label"
 
 ## Request
 
-<ParamField body="source" type="string" required>
+<ParamField body="text" type="string" required>
   The text to classify
 </ParamField>
 
 <ParamField body="labels" type="string[]" required>
-  List of possible labels (1-26 labels)
+  List of possible labels (1-100)
 </ParamField>
 
 <ParamField body="descriptions" type="object">
@@ -20,6 +20,14 @@ description: "Classify text into exactly one label"
 
 <ParamField body="model" type="string">
   Model override (optional)
+</ParamField>
+
+<ParamField body="speed" type="string" default="fast">
+  Speed tier: `fast` (<200ms, $0.60/1M tokens) or `standard` (<1s, $0.20/1M tokens)
+</ParamField>
+
+<ParamField body="cache" type="boolean" default="true">
+  Set to `false` to bypass cache and force a fresh classification
 </ParamField>
 
 ## Response
@@ -36,8 +44,12 @@ description: "Classify text into exactly one label"
   Processing time in milliseconds
 </ResponseField>
 
-<ResponseField name="usage" type="object">
-  Token usage information
+<ResponseField name="tokens" type="number">
+  Total tokens used
+</ResponseField>
+
+<ResponseField name="cached" type="boolean">
+  Whether the response was served from cache
 </ResponseField>
 
 ## Examples
@@ -50,7 +62,7 @@ description: "Classify text into exactly one label"
 import classer
 
 result = classer.classify(
-    source="I can't log in to my account",
+    text="I can't log in to my account",
     labels=["billing", "technical", "sales"]
 )
 
@@ -62,7 +74,7 @@ print(result.confidence) # 0.94
 import { classify } from "classer-ai";
 
 const result = await classify({
-  source: "I can't log in to my account",
+  text: "I can't log in to my account",
   labels: ["billing", "technical", "sales"]
 });
 
@@ -75,7 +87,7 @@ curl -X POST https://api.classer.ai/v1/classify \
   -H "Authorization: Bearer $CLASSER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "source": "I cannot log in to my account",
+    "text": "I cannot log in to my account",
     "labels": ["billing", "technical", "sales"]
   }'
 ```
@@ -90,7 +102,7 @@ Adding descriptions improves accuracy for ambiguous labels:
 
 ```python Python
 result = classer.classify(
-    source="We need pricing for 500 users",
+    text="We need pricing for 500 users",
     labels=["hot", "warm", "cold"],
     descriptions={
         "hot": "Ready to buy, asking for pricing or demo",
@@ -104,7 +116,7 @@ print(result.label)  # "hot"
 
 ```typescript TypeScript
 const result = await classify({
-  source: "We need pricing for 500 users",
+  text: "We need pricing for 500 users",
   labels: ["hot", "warm", "cold"],
   descriptions: {
     hot: "Ready to buy, asking for pricing or demo",
@@ -121,7 +133,7 @@ curl -X POST https://api.classer.ai/v1/classify \
   -H "Authorization: Bearer $CLASSER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "source": "We need pricing for 500 users",
+    "text": "We need pricing for 500 users",
     "labels": ["hot", "warm", "cold"],
     "descriptions": {
       "hot": "Ready to buy, asking for pricing or demo",
@@ -138,12 +150,9 @@ curl -X POST https://api.classer.ai/v1/classify \
 {
   "label": "technical",
   "confidence": 0.9423,
-  "latency_ms": 142,
-  "usage": {
-    "prompt_tokens": 38,
-    "completion_tokens": 1,
-    "total_tokens": 39
-  }
+  "tokens": 142,
+  "latency_ms": 87,
+  "cached": false
 }
 ```
 </ResponseExample>

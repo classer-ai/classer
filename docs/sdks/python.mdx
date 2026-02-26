@@ -16,7 +16,7 @@ import classer
 
 # Uses CLASSER_API_KEY environment variable
 result = classer.classify(
-    source="I can't log in",
+    text="I can't log in",
     labels=["billing", "technical", "sales"]
 )
 
@@ -48,76 +48,68 @@ client = ClasserClient(
 
 ### classify()
 
-Single-label classification.
+Single-label classification — returns the one best-matching label.
 
 ```python
-result = classer.classify(
-    source="Text to classify",
-    labels=["label1", "label2", "label3"],
-    descriptions={"label1": "Description"},  # optional
-    model="model-name"  # optional
+result = client.classify(
+    text="I can't log in to my account",
+    labels=["billing", "technical", "sales"],
+    descriptions={                          # optional
+        "billing": "Payment or invoice issues",
+        "technical": "Login, bugs, errors",
+        "sales": "Pricing or plan questions",
+    },
+    model="qwen",                           # optional (default: "qwen")
 )
 
-# Response
-result.label        # str
-result.confidence   # float
-result.latency_ms   # float
-result.usage        # Usage | None
+result.label        # "technical"
+result.confidence   # 0.94
+result.tokens       # 142
+result.latency_ms   # 87.0
+result.cached       # False
+```
+
+You can also reference a saved classifier instead of inline labels:
+
+```python
+result = client.classify(
+    text="I can't log in",
+    classifier="support-tickets",       # or "support-tickets@v2"
+)
 ```
 
 ### tag()
 
-Multi-label classification.
+Multi-label tagging — returns all labels that exceed the confidence threshold.
 
 ```python
-result = classer.tag(
-    source="Text to tag",
-    labels=["label1", "label2", "label3"],
-    descriptions={"label1": "Description"},  # optional
-    threshold=0.3,  # optional, default 0.3
-    model="model-name"  # optional
+result = client.tag(
+    text="Breaking: Tech stocks surge amid AI boom",
+    labels=["politics", "technology", "finance", "sports"],
+    threshold=0.3,                          # optional (default: 0.3)
+    descriptions={"technology": "Tech industry news"},  # optional
+    model="qwen",                           # optional
 )
 
-# Response
-result.tags         # list[str]
-result.confidences  # list[float]
-result.latency_ms   # float
-result.usage        # Usage | None
+for t in result.labels:
+    print(f"{t.label}: {t.confidence}")
+# technology: 0.92
+# finance: 0.78
+
+result.tokens       # 200
+result.latency_ms   # 203.0
+result.cached       # False
 ```
 
-### match()
+### Module-level functions
 
-Semantic similarity scoring.
-
-```python
-result = classer.match(
-    source="Document text",
-    query="Search query",
-    model="model-name"  # optional
-)
-
-# Response
-result.score        # float
-result.latency_ms   # float
-result.usage        # Usage | None
-```
-
-### score()
-
-Attribute scoring.
+Both methods are also available as top-level convenience functions that use a default client (reads `CLASSER_API_KEY` from the environment):
 
 ```python
-result = classer.score(
-    source="Text to score",
-    attribute="urgency",
-    description="How urgent is this",  # optional
-    model="model-name"  # optional
-)
+import classer
 
-# Response
-result.score        # float
-result.latency_ms   # float
-result.usage        # Usage | None
+result = classer.classify(text="...", labels=["a", "b"])
+result = classer.tag(text="...", labels=["a", "b"], threshold=0.5)
 ```
 
 ## Error Handling
@@ -129,14 +121,22 @@ client = ClasserClient(api_key="your-key")
 
 try:
     result = client.classify(
-        source="Hello",
+        text="Hello",
         labels=["greeting", "question"]
     )
 except ClasserError as e:
     print(f"Error: {e.message}")
-    print(f"Status: {e.status}")
-    print(f"Detail: {e.detail}")
+    print(f"Status: {e.status}")    # HTTP status code (e.g. 400, 401, 422, 429)
+    print(f"Detail: {e.detail}")    # Error detail from the API
 ```
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Bad request — invalid parameters |
+| `401` | Unauthorized — missing or invalid API key |
+| `402` | Insufficient balance |
+| `422` | Validation error |
+| `429` | Rate limit exceeded |
 
 ## Types
 
@@ -145,10 +145,11 @@ except ClasserError as e:
 ```python
 @dataclass
 class ClassifyResponse:
-    label: str
-    confidence: float
-    latency_ms: float
-    usage: Optional[Usage] = None
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    tokens: int = 0
+    latency_ms: float = 0.0
+    cached: bool = False
 ```
 
 ### TagResponse
@@ -156,40 +157,28 @@ class ClassifyResponse:
 ```python
 @dataclass
 class TagResponse:
-    tags: list[str]
-    confidences: list[float]
-    latency_ms: float
-    usage: Optional[Usage] = None
+    labels: list[TagLabel]  # empty list when nothing matches
+    tokens: int = 0
+    latency_ms: float = 0.0
+    cached: bool = False
 ```
 
-### MatchResponse
+### TagLabel
 
 ```python
 @dataclass
-class MatchResponse:
-    score: float
-    latency_ms: float
-    usage: Optional[Usage] = None
+class TagLabel:
+    label: str
+    confidence: float
 ```
 
-### ScoreResponse
+### ClasserError
 
 ```python
-@dataclass
-class ScoreResponse:
-    score: float
-    latency_ms: float
-    usage: Optional[Usage] = None
-```
-
-### Usage
-
-```python
-@dataclass
-class Usage:
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+class ClasserError(Exception):
+    message: str
+    status: Optional[int]
+    detail: Optional[str]
 ```
 
 ## Requirements

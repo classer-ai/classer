@@ -13,6 +13,9 @@ class Resource:
     class AuthSecret:
         type: str
         value: str
+    class BatchBucket:
+        name: str
+        type: str
     class CronSecret:
         type: str
         value: str

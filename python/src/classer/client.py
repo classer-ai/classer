@@ -8,10 +8,8 @@ import httpx
 from .exceptions import ClasserError
 from .types import (
     ClassifyResponse,
-    MatchResponse,
-    ScoreResponse,
+    TagLabel,
     TagResponse,
-    Usage,
 )
 
 
@@ -29,14 +27,11 @@ class ClasserClient:
 
         Args:
             api_key: API key for authentication. Falls back to CLASSER_API_KEY env var.
-            base_url: Base URL for the API. Falls back to CLASSER_BASE_URL env var
-                      or https://api.classer.ai.
+            base_url: Base URL for the API. Defaults to https://api.classer.ai.
             timeout: Request timeout in seconds.
         """
         self.api_key = api_key or os.environ.get("CLASSER_API_KEY", "")
-        self.base_url = (
-            base_url or os.environ.get("CLASSER_BASE_URL") or "https://api.classer.ai"
-        )
+        self.base_url = base_url or "https://api.classer.ai"
         self.timeout = timeout
 
     def _request(self, endpoint: str, body: dict) -> dict:
@@ -64,172 +59,108 @@ class ClasserClient:
 
         return response.json()
 
-    def _parse_usage(self, data: dict) -> Optional[Usage]:
-        """Parse usage from response data."""
-        if "usage" in data and data["usage"]:
-            u = data["usage"]
-            return Usage(
-                prompt_tokens=u["prompt_tokens"],
-                completion_tokens=u["completion_tokens"],
-                total_tokens=u["total_tokens"],
-            )
-        return None
-
     def classify(
         self,
-        source: str,
-        labels: list[str],
+        text: str,
+        labels: Optional[list[str]] = None,
+        classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
         model: Optional[str] = None,
     ) -> ClassifyResponse:
         """
-        Classify text into one of the provided labels.
+        Classify text into one of the provided labels (single-label).
 
         Args:
-            source: Text to classify.
-            labels: List of possible labels (1-26).
+            text: Text to classify.
+            labels: List of possible labels (1-100).
+            classifier: Saved classifier name or "name@vN" reference.
             descriptions: Maps label name to description for better accuracy.
             model: Model override.
 
         Returns:
-            ClassifyResponse with label, confidence, and latency_ms.
+            ClassifyResponse with label and confidence.
 
         Example:
             >>> result = classer.classify(
-            ...     source="I can't log in",
+            ...     text="I can't log in",
             ...     labels=["billing", "technical_support", "sales"]
             ... )
             >>> print(result.label)  # "technical_support"
         """
-        body: dict = {"source": source, "labels": labels}
+        body: dict = {"text": text}
+        if classifier:
+            body["classifier"] = classifier
+        if labels:
+            body["labels"] = labels
         if descriptions:
             body["descriptions"] = descriptions
         if model:
             body["model"] = model
 
         data = self._request("/v1/classify", body)
+
         return ClassifyResponse(
-            label=data["label"],
-            confidence=data["confidence"],
-            latency_ms=data["latency_ms"],
-            usage=self._parse_usage(data),
+            label=data.get("label"),
+            confidence=data.get("confidence"),
+            tokens=data.get("tokens", 0),
+            latency_ms=data.get("latency_ms", 0),
+            cached=data.get("cached", False),
         )
 
     def tag(
         self,
-        source: str,
-        labels: list[str],
+        text: str,
+        labels: Optional[list[str]] = None,
+        classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
-        threshold: Optional[float] = None,
         model: Optional[str] = None,
+        threshold: Optional[float] = None,
     ) -> TagResponse:
         """
-        Tag text with multiple labels above a confidence threshold.
+        Tag text with multiple labels that exceed a confidence threshold.
 
         Args:
-            source: Text to tag.
-            labels: List of possible labels (2-26).
+            text: Text to tag.
+            labels: List of possible labels (1-100).
+            classifier: Saved classifier name or "name@vN" reference.
             descriptions: Maps label name to description for better accuracy.
-            threshold: Minimum confidence threshold (0-1). Default: 0.3.
             model: Model override.
+            threshold: Confidence threshold (0-1). Default: 0.3.
 
         Returns:
-            TagResponse with tags, confidences, and latency_ms.
+            TagResponse with labels list (each has label and confidence).
 
         Example:
             >>> result = classer.tag(
-            ...     source="Breaking: Tech stocks surge amid AI boom",
+            ...     text="Breaking: Tech stocks surge amid AI boom",
             ...     labels=["politics", "technology", "finance", "sports"],
             ...     threshold=0.3
             ... )
-            >>> print(result.tags)  # ["technology", "finance"]
+            >>> for tag in result.labels:
+            ...     print(f"{tag.label}: {tag.confidence}")
         """
-        body: dict = {"source": source, "labels": labels}
+        body: dict = {"text": text}
+        if classifier:
+            body["classifier"] = classifier
+        if labels:
+            body["labels"] = labels
         if descriptions:
             body["descriptions"] = descriptions
+        if model:
+            body["model"] = model
         if threshold is not None:
             body["threshold"] = threshold
-        if model:
-            body["model"] = model
 
         data = self._request("/v1/tag", body)
+
+        tag_labels = [
+            TagLabel(label=item["label"], confidence=item["confidence"])
+            for item in data.get("labels") or []
+        ]
+
         return TagResponse(
-            tags=data["tags"],
-            confidences=data["confidences"],
-            latency_ms=data["latency_ms"],
-            usage=self._parse_usage(data),
-        )
-
-    def match(
-        self,
-        source: str,
-        query: str,
-        model: Optional[str] = None,
-    ) -> MatchResponse:
-        """
-        Calculate semantic similarity between source and query (for RAG retrieval).
-
-        Args:
-            source: Source document text.
-            query: Query to match against.
-            model: Model override.
-
-        Returns:
-            MatchResponse with score and latency_ms.
-
-        Example:
-            >>> result = classer.match(
-            ...     source="Our return policy allows refunds within 30 days.",
-            ...     query="Can I get a refund?"
-            ... )
-            >>> print(result.score)  # 0.95
-        """
-        body: dict = {"source": source, "query": query}
-        if model:
-            body["model"] = model
-
-        data = self._request("/v1/match", body)
-        return MatchResponse(
-            score=data["score"],
-            latency_ms=data["latency_ms"],
-            usage=self._parse_usage(data),
-        )
-
-    def score(
-        self,
-        source: str,
-        attribute: str,
-        description: Optional[str] = None,
-        model: Optional[str] = None,
-    ) -> ScoreResponse:
-        """
-        Score text on a specific attribute (0-1 scale).
-
-        Args:
-            source: Text to score.
-            attribute: Attribute to score.
-            description: Description of the attribute for better accuracy.
-            model: Model override.
-
-        Returns:
-            ScoreResponse with score and latency_ms.
-
-        Example:
-            >>> result = classer.score(
-            ...     source="This is URGENT! We need help immediately!",
-            ...     attribute="urgency"
-            ... )
-            >>> print(result.score)  # 0.92
-        """
-        body: dict = {"source": source, "attribute": attribute}
-        if description:
-            body["description"] = description
-        if model:
-            body["model"] = model
-
-        data = self._request("/v1/score", body)
-        return ScoreResponse(
-            score=data["score"],
-            latency_ms=data["latency_ms"],
-            usage=self._parse_usage(data),
+            labels=tag_labels,
+            tokens=data.get("tokens", 0),
+            latency_ms=data.get("latency_ms", 0),
+            cached=data.get("cached", False),
         )
