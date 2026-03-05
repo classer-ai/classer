@@ -10,6 +10,10 @@ export interface ClassifyRequest {
   descriptions?: Record<string, string>;
   /** Model override */
   model?: string;
+  /** Speed tier: "fast" (default, <200ms) or "standard" (<1s) */
+  speed?: "fast" | "standard";
+  /** Set to false to bypass cache. Default: true */
+  cache?: boolean;
 }
 
 export interface ClassifyResponse {
@@ -28,7 +32,7 @@ export interface ClassifyResponse {
 export interface TagRequest {
   /** Text to tag */
   text: string;
-  /** List of possible labels (2-26) */
+  /** List of possible labels (1-100) */
   labels?: string[];
   /** Saved classifier name or "name@vN" reference */
   classifier?: string;
@@ -38,6 +42,10 @@ export interface TagRequest {
   model?: string;
   /** Confidence threshold (0-1). Default: 0.3 */
   threshold?: number;
+  /** Speed tier: "fast" (default, <200ms) or "standard" (<1s) */
+  speed?: "fast" | "standard";
+  /** Set to false to bypass cache. Default: true */
+  cache?: boolean;
 }
 
 export interface TagLabel {
@@ -61,6 +69,8 @@ export interface ClasserConfig {
   apiKey?: string;
   /** Base URL for the API. Defaults to https://api.classer.ai */
   baseUrl?: string;
+  /** Request timeout in seconds. Default: 30 */
+  timeout?: number;
 }
 
 class ClasserError extends Error {
@@ -77,10 +87,12 @@ class ClasserError extends Error {
 class ClasserClient {
   private apiKey: string;
   private baseUrl: string;
+  private timeout: number;
 
   constructor(config: ClasserConfig = {}) {
     this.apiKey = config.apiKey || process.env.CLASSER_API_KEY || "";
     this.baseUrl = config.baseUrl || "https://api.classer.ai";
+    this.timeout = config.timeout ?? 30;
   }
 
   private async request<T>(endpoint: string, body: unknown): Promise<T> {
@@ -94,17 +106,35 @@ class ClasserClient {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeoutMs = this.timeout * 1000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (error: unknown) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new ClasserError(`Request timed out after ${this.timeout}s`);
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      throw new ClasserError(`Request failed: ${message}`);
+    }
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       let detail: string | undefined;
       try {
         const errorData = await response.json();
-        detail = errorData.detail;
+        detail = typeof errorData === "object" && errorData !== null && "detail" in errorData
+          ? String(errorData.detail)
+          : undefined;
       } catch {
         // ignore parse errors
       }
@@ -131,6 +161,9 @@ class ClasserClient {
    * ```
    */
   async classify(request: ClassifyRequest): Promise<ClassifyResponse> {
+    if (!request.labels && !request.classifier) {
+      throw new ClasserError("Either 'labels' or 'classifier' must be provided");
+    }
     return this.request<ClassifyResponse>("/v1/classify", request);
   }
 
@@ -150,23 +183,33 @@ class ClasserClient {
    * ```
    */
   async tag(request: TagRequest): Promise<TagResponse> {
+    if (!request.labels && !request.classifier) {
+      throw new ClasserError("Either 'labels' or 'classifier' must be provided");
+    }
     return this.request<TagResponse>("/v1/tag", request);
   }
 }
 
-// Default instance
-const defaultClient = new ClasserClient();
+// Lazy default instance
+let defaultClient: ClasserClient | null = null;
+
+function getDefaultClient(): ClasserClient {
+  if (!defaultClient) {
+    defaultClient = new ClasserClient();
+  }
+  return defaultClient;
+}
 
 // Export both the class and convenience functions
 export { ClasserClient, ClasserError };
 
-export const classify = (request: ClassifyRequest) => defaultClient.classify(request);
-export const tag = (request: TagRequest) => defaultClient.tag(request);
+export const classify = (request: ClassifyRequest) => getDefaultClient().classify(request);
+export const tag = (request: TagRequest) => getDefaultClient().tag(request);
 
 // Default export for `import Classer from "classer"`
 export default {
   ClasserClient,
   ClasserError,
-  classify: (request: ClassifyRequest) => defaultClient.classify(request),
-  tag: (request: TagRequest) => defaultClient.tag(request),
+  classify,
+  tag,
 };

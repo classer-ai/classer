@@ -59,6 +59,13 @@ const result = await client.classify({
     sales: "Pricing or plan questions",
   },
   model: "qwen",                              // optional (default: "qwen")
+  speed: "fast",                              // optional: "fast" (default) or "standard"
+  cache: true,                                // optional: set false to bypass cache
+  sourceType: "support ticket",               // optional: context for prompt tuning
+  examples: {                                 // optional: per-label examples
+    billing: ["I need a refund", "Update my card"],
+    technical: ["Can't log in", "App crashed"],
+  },
 });
 
 result.label        // "technical"
@@ -88,6 +95,12 @@ const result = await client.tag({
   threshold: 0.3,                              // optional (default: 0.3)
   descriptions: { technology: "Tech industry news" },  // optional
   model: "qwen",                               // optional
+  speed: "fast",                               // optional: "fast" (default) or "standard"
+  cache: true,                                 // optional: set false to bypass cache
+  sourceType: "news article",                  // optional: context for prompt tuning
+  examples: {                                  // optional: per-label examples
+    technology: ["New chip released", "Software update"],
+  },
 });
 
 for (const t of result.labels) {
@@ -152,6 +165,10 @@ interface ClassifyRequest {
   classifier?: string;
   descriptions?: Record<string, string>;
   model?: string;
+  speed?: "fast" | "standard";
+  cache?: boolean;
+  sourceType?: string;
+  examples?: Record<string, string[]>;
 }
 ```
 
@@ -164,6 +181,7 @@ interface ClassifyResponse {
   tokens: number;
   latency_ms: number;
   cached: boolean;
+  public?: boolean;
 }
 ```
 
@@ -177,6 +195,10 @@ interface TagRequest {
   descriptions?: Record<string, string>;
   model?: string;
   threshold?: number;  // default: 0.3
+  speed?: "fast" | "standard";
+  cache?: boolean;
+  sourceType?: string;
+  examples?: Record<string, string[]>;
 }
 ```
 
@@ -197,6 +219,7 @@ interface TagResponse {
   tokens: number;
   latency_ms: number;
   cached: boolean;
+  public?: boolean;
 }
 ```
 

@@ -543,6 +543,54 @@ describe("Request headers", () => {
   });
 });
 
+describe("Timeout", () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it("should default to 30 seconds", () => {
+    const client = new ClasserClient();
+    // Verify the default timeout is used in abort signal
+    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+      expect(init.signal).toBeDefined();
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
+      });
+    });
+
+    return client.classify({ text: "test", labels: ["a", "b"] });
+  });
+
+  it("should accept custom timeout in seconds", async () => {
+    const client = new ClasserClient({ timeout: 5 });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
+    });
+
+    const result = await client.classify({ text: "test", labels: ["a", "b"] });
+    expect(result.label).toBe("a");
+  });
+
+  it("should throw ClasserError with seconds in message on timeout", async () => {
+    const client = new ClasserClient({ timeout: 2 });
+
+    const abortError = new Error("The operation was aborted");
+    abortError.name = "AbortError";
+    mockFetch.mockRejectedValueOnce(abortError);
+
+    try {
+      await client.classify({ text: "test", labels: ["a", "b"] });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ClasserError);
+      expect((error as ClasserError).message).toBe("Request timed out after 2s");
+    }
+  });
+});
+
 describe("Custom base URL", () => {
   beforeEach(() => {
     mockFetch.mockReset();

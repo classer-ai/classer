@@ -37,9 +37,17 @@ def classify(
     classifier: Optional[str] = None,
     descriptions: Optional[dict[str, str]] = None,
     model: Optional[str] = None,
+    speed: Optional[str] = None,
+    cache: Optional[bool] = None,
 ) -> ClassifyResponse:
-    """Classify text into one of the provided labels (single-label)."""
-    return _get_default_client().classify(text, labels, classifier, descriptions, model)
+    """Classify text into one of the provided labels (single-label).
+
+    See ClasserClient.classify for full parameter documentation.
+    """
+    return _get_default_client().classify(
+        text, labels=labels, classifier=classifier,
+        descriptions=descriptions, model=model, speed=speed, cache=cache,
+    )
 
 
 def tag(
@@ -49,6 +57,15 @@ def tag(
     descriptions: Optional[dict[str, str]] = None,
     model: Optional[str] = None,
     threshold: Optional[float] = None,
+    speed: Optional[str] = None,
+    cache: Optional[bool] = None,
 ) -> TagResponse:
-    """Tag text with multiple labels (multi-label)."""
-    return _get_default_client().tag(text, labels, classifier, descriptions, model, threshold)
+    """Tag text with multiple labels (multi-label).
+
+    See ClasserClient.tag for full parameter documentation.
+    """
+    return _get_default_client().tag(
+        text, labels=labels, classifier=classifier,
+        descriptions=descriptions, model=model, threshold=threshold,
+        speed=speed, cache=cache,
+    )

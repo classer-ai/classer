@@ -48,9 +48,9 @@ class ClasserClient:
             detail = None
             try:
                 error_data = response.json()
-                detail = error_data.get("detail")
-            except Exception:
-                pass
+                detail = error_data.get("detail") if isinstance(error_data, dict) else None
+            except (ValueError, TypeError):
+                detail = response.text[:200] if response.text else None
             raise ClasserError(
                 f"Request failed with status {response.status_code}",
                 status=response.status_code,
@@ -59,6 +59,35 @@ class ClasserClient:
 
         return response.json()
 
+    @staticmethod
+    def _build_body(
+        text: str,
+        labels: Optional[list[str]] = None,
+        classifier: Optional[str] = None,
+        descriptions: Optional[dict[str, str]] = None,
+        model: Optional[str] = None,
+        speed: Optional[str] = None,
+        cache: Optional[bool] = None,
+        threshold: Optional[float] = None,
+    ) -> dict:
+        """Build a request body dict, omitting None/empty fields."""
+        body: dict = {"text": text}
+        if classifier:
+            body["classifier"] = classifier
+        if labels:
+            body["labels"] = labels
+        if descriptions:
+            body["descriptions"] = descriptions
+        if model:
+            body["model"] = model
+        if threshold is not None:
+            body["threshold"] = threshold
+        if speed:
+            body["speed"] = speed
+        if cache is not None:
+            body["cache"] = cache
+        return body
+
     def classify(
         self,
         text: str,
@@ -66,6 +95,8 @@ class ClasserClient:
         classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
         model: Optional[str] = None,
+        speed: Optional[str] = None,
+        cache: Optional[bool] = None,
     ) -> ClassifyResponse:
         """
         Classify text into one of the provided labels (single-label).
@@ -76,6 +107,8 @@ class ClasserClient:
             classifier: Saved classifier name or "name@vN" reference.
             descriptions: Maps label name to description for better accuracy.
             model: Model override.
+            speed: Speed tier — "fast" (default, <200ms) or "standard" (<1s).
+            cache: Set to False to bypass cache. Default: True.
 
         Returns:
             ClassifyResponse with label and confidence.
@@ -87,15 +120,10 @@ class ClasserClient:
             ... )
             >>> print(result.label)  # "technical_support"
         """
-        body: dict = {"text": text}
-        if classifier:
-            body["classifier"] = classifier
-        if labels:
-            body["labels"] = labels
-        if descriptions:
-            body["descriptions"] = descriptions
-        if model:
-            body["model"] = model
+        body = self._build_body(
+            text, labels=labels, classifier=classifier,
+            descriptions=descriptions, model=model, speed=speed, cache=cache,
+        )
 
         data = self._request("/v1/classify", body)
 
@@ -115,6 +143,8 @@ class ClasserClient:
         descriptions: Optional[dict[str, str]] = None,
         model: Optional[str] = None,
         threshold: Optional[float] = None,
+        speed: Optional[str] = None,
+        cache: Optional[bool] = None,
     ) -> TagResponse:
         """
         Tag text with multiple labels that exceed a confidence threshold.
@@ -126,6 +156,8 @@ class ClasserClient:
             descriptions: Maps label name to description for better accuracy.
             model: Model override.
             threshold: Confidence threshold (0-1). Default: 0.3.
+            speed: Speed tier — "fast" (default, <200ms) or "standard" (<1s).
+            cache: Set to False to bypass cache. Default: True.
 
         Returns:
             TagResponse with labels list (each has label and confidence).
@@ -139,17 +171,11 @@ class ClasserClient:
             >>> for tag in result.labels:
             ...     print(f"{tag.label}: {tag.confidence}")
         """
-        body: dict = {"text": text}
-        if classifier:
-            body["classifier"] = classifier
-        if labels:
-            body["labels"] = labels
-        if descriptions:
-            body["descriptions"] = descriptions
-        if model:
-            body["model"] = model
-        if threshold is not None:
-            body["threshold"] = threshold
+        body = self._build_body(
+            text, labels=labels, classifier=classifier,
+            descriptions=descriptions, model=model, threshold=threshold,
+            speed=speed, cache=cache,
+        )
 
         data = self._request("/v1/tag", body)
 

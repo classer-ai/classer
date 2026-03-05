@@ -47,7 +47,7 @@ curl -X POST https://api.classer.ai/v1/classify \
 
 <CardGroup cols={3}>
   <Card title="From $0.08/1M tokens" icon="dollar-sign">
-    5M free tokens/month to get started
+    10M free tokens/month to get started
   </Card>
   <Card title="<200ms latency" icon="bolt">
     Fast enough for real-time applications
@@ -108,17 +108,19 @@ for (const t of tagged.labels) {
 
 ## Pricing
 
-| Speed | Per 1M tokens | Latency | Best for |
-|-------|--------------|---------|----------|
+| Tier | Per 1M tokens | Latency | Best for |
+|------|--------------|---------|----------|
 | **Fast** | $0.60 | <200ms | Real-time UIs, chatbots |
 | **Standard** | $0.20 | <1s | Background processing, pipelines |
-| **Batch** | $0.08 | Async | Bulk classification of large datasets |
+| **Fast Batch** | $0.08 | Async | Bulk classification of large datasets |
 
-Every account gets **5M free tokens/month** on the standard tier.
+Fast and Standard are set via the `speed` parameter. Fast Batch pricing applies automatically when using the batch endpoints.
+
+Every account gets **10M free tokens/month** on the standard tier.
 
 ## Batch processing
 
-Classify or tag up to 1,000 texts in a single request.
+Classify or tag up to 1,000 texts in a single request using the batch endpoints.
 
 ```bash
 curl -X POST https://api.classer.ai/v1/classify/batch \

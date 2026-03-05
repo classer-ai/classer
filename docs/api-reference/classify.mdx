@@ -10,8 +10,12 @@ description: "Classify text into exactly one label"
   The text to classify
 </ParamField>
 
-<ParamField body="labels" type="string[]" required>
-  List of possible labels (1-100)
+<ParamField body="labels" type="string[]">
+  List of possible labels (1-200, max 50 characters each). Required unless `classifier` is provided.
+</ParamField>
+
+<ParamField body="classifier" type="string">
+  Saved classifier name (e.g. `"support-tickets"`) or a pinned version (`"support-tickets@v2"`). Alternative to providing `labels` inline.
 </ParamField>
 
 <ParamField body="descriptions" type="object">
@@ -28,6 +32,14 @@ description: "Classify text into exactly one label"
 
 <ParamField body="cache" type="boolean" default="true">
   Set to `false` to bypass cache and force a fresh classification
+</ParamField>
+
+<ParamField body="source_type" type="string">
+  Optional context for prompt tuning (e.g. `"app review"`, `"support ticket"`)
+</ParamField>
+
+<ParamField body="examples" type="object">
+  Optional per-label example texts to improve accuracy. Keys are label names, values are arrays of example strings.
 </ParamField>
 
 ## Response
@@ -50,6 +62,10 @@ description: "Classify text into exactly one label"
 
 <ResponseField name="cached" type="boolean">
   Whether the response was served from cache
+</ResponseField>
+
+<ResponseField name="public" type="boolean">
+  Present when using public (unauthenticated) mode
 </ResponseField>
 
 ## Examples

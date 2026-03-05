@@ -78,7 +78,9 @@ const result = await classify({
   labels?: string[],        // 1-100 possible labels
   classifier?: string,      // Saved classifier name or "name@vN"
   descriptions?: Record<string, string>,
-  model?: string
+  model?: string,
+  speed?: "fast" | "standard",  // "fast" (default, <200ms) or "standard" (<1s)
+  cache?: boolean           // Set to false to bypass cache. Default: true
 });
 
 // Returns ClassifyResponse
@@ -100,7 +102,9 @@ const result = await tag({
   classifier?: string,      // Saved classifier name or "name@vN"
   descriptions?: Record<string, string>,
   threshold?: number,       // Default: 0.3
-  model?: string
+  model?: string,
+  speed?: "fast" | "standard",  // "fast" (default, <200ms) or "standard" (<1s)
+  cache?: boolean           // Set to false to bypass cache. Default: true
 });
 
 // Returns TagResponse

@@ -64,7 +64,7 @@ client = ClasserClient(
 
 ## API Reference
 
-### `classify(text, labels=None, classifier=None, descriptions=None, model=None)`
+### `classify(text, labels=None, classifier=None, descriptions=None, model=None, speed=None, cache=None)`
 
 Classify text into exactly one of the provided labels.
 
@@ -73,7 +73,9 @@ result = classer.classify(
     text="Text to classify",
     labels=["label1", "label2"],  # 1-100 possible labels
     descriptions={"label1": "Description for better accuracy"},
-    model="qwen"
+    model="qwen",
+    speed="fast",       # "fast" (default, <200ms) or "standard" (<1s)
+    cache=True          # Set to False to bypass cache. Default: True
 )
 
 result.label        # Selected label
@@ -83,7 +85,7 @@ result.latency_ms   # Processing time in ms
 result.cached       # Whether served from cache
 ```
 
-### `tag(text, labels=None, classifier=None, descriptions=None, model=None, threshold=None)`
+### `tag(text, labels=None, classifier=None, descriptions=None, model=None, threshold=None, speed=None, cache=None)`
 
 Multi-label tagging — returns all labels above a confidence threshold.
 
@@ -92,7 +94,9 @@ result = classer.tag(
     text="Text to tag",
     labels=["label1", "label2"],  # 1-100 possible labels
     descriptions={"label1": "Description"},
-    threshold=0.3  # Default: 0.3
+    threshold=0.3,  # Default: 0.3
+    speed="fast",   # "fast" (default, <200ms) or "standard" (<1s)
+    cache=True      # Set to False to bypass cache. Default: True
 )
 
 for t in result.labels:

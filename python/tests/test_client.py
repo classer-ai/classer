@@ -556,7 +556,7 @@ class TestClasserError:
         mock_response = MagicMock()
         mock_response.is_success = False
         mock_response.status_code = 500
-        mock_response.json.side_effect = Exception("Invalid JSON")
+        mock_response.json.side_effect = ValueError("Invalid JSON")
         mock_post.return_value = mock_response
 
         client = ClasserClient(api_key="test-key")

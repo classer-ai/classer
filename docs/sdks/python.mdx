@@ -60,6 +60,13 @@ result = client.classify(
         "sales": "Pricing or plan questions",
     },
     model="qwen",                           # optional (default: "qwen")
+    speed="fast",                           # optional: "fast" (default) or "standard"
+    cache=True,                             # optional: set False to bypass cache
+    source_type="support ticket",           # optional: context for prompt tuning
+    examples={                              # optional: per-label examples
+        "billing": ["I need a refund", "Update my card"],
+        "technical": ["Can't log in", "App crashed"],
+    },
 )
 
 result.label        # "technical"
@@ -89,6 +96,12 @@ result = client.tag(
     threshold=0.3,                          # optional (default: 0.3)
     descriptions={"technology": "Tech industry news"},  # optional
     model="qwen",                           # optional
+    speed="fast",                           # optional: "fast" (default) or "standard"
+    cache=True,                             # optional: set False to bypass cache
+    source_type="news article",             # optional: context for prompt tuning
+    examples={                              # optional: per-label examples
+        "technology": ["New chip released", "Software update"],
+    },
 )
 
 for t in result.labels:
@@ -150,6 +163,7 @@ class ClassifyResponse:
     tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
+    public: Optional[bool] = None
 ```
 
 ### TagResponse
@@ -161,6 +175,7 @@ class TagResponse:
     tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
+    public: Optional[bool] = None
 ```
 
 ### TagLabel
