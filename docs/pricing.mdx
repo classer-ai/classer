@@ -1,0 +1,62 @@
+---
+title: Pricing & Limits
+description: "Speed tiers, pricing, free tier, and rate limits"
+---
+
+## Speed tiers
+
+Every request is billed per token. Choose the speed that fits your workload.
+
+| Speed | Price / 1M tokens | Latency | Best for |
+|-------|-------------------|---------|----------|
+| **Fast** | $0.60 | &lt;200ms P95 | Real-time UX, chatbots |
+| **Standard** | $0.20 | &lt;1s P95 | Background processing |
+| **Fast Batch** | $0.08 | &lt;15min P95 | Bulk analysis, exports |
+
+Fast and Standard are set via the `speed` parameter on `/v1/classify` and `/v1/tag`. Fast Batch pricing applies automatically when using the [async batch endpoints](/api-reference/batch).
+
+## Free tier
+
+Every account gets **5M free tokens/month** — no credit card required. Free tokens work on all speed tiers.
+
+## Rate limits
+
+Rate limits depend on the tier configured for your API key.
+
+| Tier | Requests/min | Tokens/min | Concurrent |
+|------|-------------|------------|------------|
+| Public | 30 | 150,000 | 2 |
+| Developer | 60 | 500,000 | 5 |
+| Production | 1,000 | 10,000,000 | 50 |
+| Enterprise | Custom | Custom | Custom |
+
+Cache hits do not consume rate limits.
+
+You can set custom per-key rate limits when [creating an API key](https://classer.ai/api-keys).
+
+## Validation limits
+
+| Limit | Value |
+|-------|-------|
+| Max labels per request | 200 |
+| Max label length | 50 characters |
+| Max text length | 100,000 characters |
+| Max request body | 1MB |
+| Max sync batch size | 1,000 texts |
+| Max async batch file | 5GB |
+
+## Cache
+
+Responses are cached automatically based on your tier. Cache hits are free (zero tokens billed).
+
+| Tier | Default TTL |
+|------|-------------|
+| Public | 5 minutes |
+| Developer | 1 hour |
+| Production | 24 hours |
+
+Set `cache: false` in your request to bypass caching, or configure a custom TTL per API key.
+
+## Enterprise
+
+Need volume pricing, dedicated infrastructure, or custom rate limits? [Contact us](mailto:support@classer.ai).

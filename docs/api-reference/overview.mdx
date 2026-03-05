@@ -126,41 +126,6 @@ Rate limit headers are included when applicable.
 | `429` | Rate limit exceeded |
 | `500` | Internal server error |
 
-## Speed tiers
+## Pricing, speed tiers & limits
 
-The `/v1/classify` and `/v1/tag` endpoints accept a `speed` parameter that controls latency and pricing.
-
-| Speed | Latency | Per 1M tokens |
-|-------|---------|---------------|
-| `fast` (default) | &lt;200ms | $0.60 |
-| `standard` | &lt;1s | $0.20 |
-
-The sync batch endpoints (`/v1/classify/batch`, `/v1/tag/batch`) use the `standard` speed tier and are billed at **$0.20/1M tokens**.
-
-The async Fast Batch endpoints (`/v1/batch/*`) are billed at **$0.08/1M tokens**.
-
-Every account gets **5M free tokens/month**.
-
-## Rate limits
-
-Rate limits depend on the tier configured for your API key.
-
-| Tier | Requests/min | Tokens/min | Concurrent |
-|------|-------------|------------|------------|
-| Public | 30 | 150,000 | 2 |
-| Developer | 60 | 500,000 | 5 |
-| Production | 1,000 | 10,000,000 | 50 |
-| Enterprise | Custom | Custom | Custom |
-
-Cache hits do not consume rate limits.
-
-## Limits
-
-| Limit | Value |
-|-------|-------|
-| Max labels | 200 |
-| Max label length | 50 characters |
-| Max text length | 100,000 characters |
-| Max request body | 1MB |
-| Max sync batch size | 1,000 texts |
-| Max async batch file | 5GB |
+See [Pricing & Limits](/pricing) for full details on speed tiers, rate limits, free tier, and validation limits.
