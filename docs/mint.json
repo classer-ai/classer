@@ -58,7 +58,8 @@
       "pages": [
         "api-reference/overview",
         "api-reference/classify",
-        "api-reference/tag"
+        "api-reference/tag",
+        "api-reference/batch"
       ]
     }
   ],
