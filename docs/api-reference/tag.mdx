@@ -7,11 +7,11 @@ description: "Tag text with multiple labels"
 ## Request
 
 <ParamField body="text" type="string" required>
-  The text to tag
+  The text to tag (1–100,000 characters)
 </ParamField>
 
 <ParamField body="labels" type="string[]">
-  List of possible labels (1-200, max 50 characters each). Required unless `classifier` is provided.
+  List of possible labels (1–200, max 50 characters each). Required unless `classifier` is provided.
 </ParamField>
 
 <ParamField body="classifier" type="string">
@@ -19,15 +19,19 @@ description: "Tag text with multiple labels"
 </ParamField>
 
 <ParamField body="descriptions" type="object">
-  Optional descriptions for each label to improve accuracy
+  Optional descriptions for each label to improve accuracy. Keys are label names, values are description strings.
+</ParamField>
+
+<ParamField body="examples" type="object">
+  Optional per-label example texts to improve accuracy. Keys are label names, values are arrays of example strings.
+</ParamField>
+
+<ParamField body="source_type" type="string">
+  Optional context for prompt tuning (e.g. `"app review"`, `"support ticket"`)
 </ParamField>
 
 <ParamField body="threshold" type="number" default="0.3">
-  Confidence threshold (0-1). Only labels above this threshold are returned.
-</ParamField>
-
-<ParamField body="model" type="string">
-  Model override (optional)
+  Confidence threshold (0–1). Only labels above this threshold are returned.
 </ParamField>
 
 <ParamField body="speed" type="string" default="fast">
@@ -38,18 +42,10 @@ description: "Tag text with multiple labels"
   Set to `false` to bypass cache and force a fresh classification
 </ParamField>
 
-<ParamField body="source_type" type="string">
-  Optional context for prompt tuning (e.g. `"app review"`, `"support ticket"`)
-</ParamField>
-
-<ParamField body="examples" type="object">
-  Optional per-label example texts to improve accuracy. Keys are label names, values are arrays of example strings.
-</ParamField>
-
 ## Response
 
 <ResponseField name="labels" type="array">
-  Labels above the threshold, each with `label` (string) and `confidence` (number)
+  Labels above the threshold, each with `label` (string) and `confidence` (number, rounded to 4 decimal places)
 </ResponseField>
 
 <ResponseField name="tokens" type="number">

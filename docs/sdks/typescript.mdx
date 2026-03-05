@@ -58,7 +58,6 @@ const result = await client.classify({
     technical: "Login, bugs, errors",
     sales: "Pricing or plan questions",
   },
-  model: "qwen",                              // optional (default: "qwen")
   speed: "fast",                              // optional: "fast" (default) or "standard"
   cache: true,                                // optional: set false to bypass cache
   sourceType: "support ticket",               // optional: context for prompt tuning
@@ -94,7 +93,6 @@ const result = await client.tag({
   labels: ["politics", "technology", "finance", "sports"],
   threshold: 0.3,                              // optional (default: 0.3)
   descriptions: { technology: "Tech industry news" },  // optional
-  model: "qwen",                               // optional
   speed: "fast",                               // optional: "fast" (default) or "standard"
   cache: true,                                 // optional: set false to bypass cache
   sourceType: "news article",                  // optional: context for prompt tuning
@@ -164,7 +162,6 @@ interface ClassifyRequest {
   labels?: string[];
   classifier?: string;
   descriptions?: Record<string, string>;
-  model?: string;
   speed?: "fast" | "standard";
   cache?: boolean;
   sourceType?: string;
@@ -193,7 +190,6 @@ interface TagRequest {
   labels?: string[];
   classifier?: string;
   descriptions?: Record<string, string>;
-  model?: string;
   threshold?: number;  // default: 0.3
   speed?: "fast" | "standard";
   cache?: boolean;

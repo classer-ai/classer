@@ -59,7 +59,6 @@ result = client.classify(
         "technical": "Login, bugs, errors",
         "sales": "Pricing or plan questions",
     },
-    model="qwen",                           # optional (default: "qwen")
     speed="fast",                           # optional: "fast" (default) or "standard"
     cache=True,                             # optional: set False to bypass cache
     source_type="support ticket",           # optional: context for prompt tuning
@@ -95,7 +94,6 @@ result = client.tag(
     labels=["politics", "technology", "finance", "sports"],
     threshold=0.3,                          # optional (default: 0.3)
     descriptions={"technology": "Tech industry news"},  # optional
-    model="qwen",                           # optional
     speed="fast",                           # optional: "fast" (default) or "standard"
     cache=True,                             # optional: set False to bypass cache
     source_type="news article",             # optional: context for prompt tuning

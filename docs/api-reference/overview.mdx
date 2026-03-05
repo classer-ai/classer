@@ -9,29 +9,6 @@ description: "Classer API reference"
 https://api.classer.ai
 ```
 
-## Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | [`/v1/classify`](/api-reference/classify) | Single-label classification |
-| POST | [`/v1/tag`](/api-reference/tag) | Multi-label tagging |
-| POST | `/v1/binary` | Binary yes/no scoring |
-| POST | `/v1/classify/batch` | Batch single-label classification (up to 1000 texts) |
-| POST | `/v1/tag/batch` | Batch multi-label tagging (up to 1000 texts) |
-| POST | `/v1/batch` | Create async batch job |
-| POST | `/v1/batch/{job_id}/start` | Start async batch processing |
-| GET | `/v1/batch/{job_id}` | Poll batch job status |
-| GET | `/v1/batch/{job_id}/results` | Download batch results |
-| DELETE | `/v1/batch/{job_id}` | Delete batch job |
-| GET | `/v1/classifiers` | List saved classifiers |
-| POST | `/v1/classifiers` | Create/save a classifier |
-| GET | `/v1/classifiers/{name}` | Get classifier details |
-| GET | `/v1/keys` | List API keys |
-| POST | `/v1/keys` | Create API key |
-| GET | `/v1/balance` | Get balance and spending |
-| GET | `/v1/usage` | Get usage statistics |
-| GET | `/v1/logs` | Get request logs |
-
 ## Authentication
 
 All requests require a Bearer token in the `Authorization` header:
@@ -42,13 +19,48 @@ Authorization: Bearer your-api-key
 
 See [Authentication](/authentication) for details.
 
+## Endpoints
+
+### Classification
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | [`/v1/classify`](/api-reference/classify) | Single-label classification |
+| POST | [`/v1/tag`](/api-reference/tag) | Multi-label tagging |
+| POST | `/v1/binary` | Binary yes/no scoring |
+
+### Batch
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/v1/classify/batch` | Batch single-label classification (up to 1000 texts) |
+| POST | `/v1/tag/batch` | Batch multi-label tagging (up to 1000 texts) |
+| POST | `/v1/batch` | Create async batch job (upload NDJSON, up to 5GB) |
+| POST | `/v1/batch/{job_id}/start` | Start async batch processing |
+| GET | `/v1/batch/{job_id}` | Poll batch job status |
+| GET | `/v1/batch/{job_id}/results` | Download batch results |
+| DELETE | `/v1/batch/{job_id}` | Delete batch job |
+
+### Management
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/classifiers` | List saved classifiers |
+| POST | `/v1/classifiers` | Create/save a classifier |
+| GET | `/v1/classifiers/{name}` | Get classifier details |
+| GET | `/v1/keys` | List API keys |
+| POST | `/v1/keys` | Create API key |
+| GET | `/v1/balance` | Get balance and spending |
+| GET | `/v1/usage` | Get usage statistics |
+| GET | `/v1/logs` | Get request logs |
+
 ## Request format
 
-All endpoints accept JSON with `Content-Type: application/json`.
+All endpoints accept JSON with `Content-Type: application/json`. Maximum request body size is 1MB for real-time endpoints.
 
 ## Response format
 
-Classification responses include:
+Classification responses (`/v1/classify`, `/v1/tag`, `/v1/binary`) include:
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -57,7 +69,7 @@ Classification responses include:
 | `cached` | boolean | Whether the response was served from cache |
 | `public` | boolean | Present when using public (unauthenticated) mode |
 
-Plus endpoint-specific fields (`label`, `confidence`, `labels`, etc.).
+Plus endpoint-specific fields (`label`, `confidence`, `labels`, `score`, etc.).
 
 ### Example response
 
@@ -71,29 +83,46 @@ Plus endpoint-specific fields (`label`, `confidence`, `labels`, etc.).
 }
 ```
 
+## Response headers
+
+All classification endpoints return these headers:
+
+| Header | Description |
+|--------|-------------|
+| `X-Request-ID` | Unique request identifier |
+| `X-Cache` | `HIT` or `MISS` |
+| `X-Cache-Key` | First 16 characters of cache key |
+| `X-Tokens-Used` | Token count for this request |
+| `X-Classer-Mode` | `public` when using unauthenticated mode |
+
+Rate limit headers are included when applicable.
+
 ## Error responses
 
 ```json
 {
-  "code": "validation_error",
-  "message": "Description of what went wrong",
-  "field": "labels",
-  "details": "Additional context (optional)"
+  "error": "validation-error",
+  "code": "VALIDATION_ERROR",
+  "message": "Labels must be unique",
+  "details": { "field": "labels" },
+  "docs_url": "https://docs.classer.ai/api-reference/classify"
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `error` | string | Lowercase hyphenated error code |
 | `code` | string | Machine-readable error code |
 | `message` | string | Human-readable error message |
-| `field` | string | The request field that caused the error (optional) |
-| `details` | string | Additional context (optional) |
+| `details` | object | Additional context (optional) |
+| `docs_url` | string | Link to relevant docs (optional) |
 
 | Status | Description |
 |--------|-------------|
 | `400` | Bad request — invalid parameters |
 | `401` | Unauthorized — missing or invalid API key |
 | `402` | Insufficient balance |
+| `409` | Conflict — e.g. batch concurrency limit |
 | `422` | Validation error — check request body |
 | `429` | Rate limit exceeded |
 | `500` | Internal server error |
@@ -107,9 +136,11 @@ The `/v1/classify` and `/v1/tag` endpoints accept a `speed` parameter that contr
 | `fast` (default) | <200ms | $0.60 |
 | `standard` | <1s | $0.20 |
 
-The Fast Batch endpoints (`/v1/classify/batch`, `/v1/tag/batch`) are billed at **$0.08/1M tokens** automatically — no `speed` parameter needed.
+The sync batch endpoints (`/v1/classify/batch`, `/v1/tag/batch`) use the `standard` speed tier and are billed at **$0.20/1M tokens**.
 
-Every account gets **10M free tokens/month** on the standard tier.
+The async Fast Batch endpoints (`/v1/batch/*`) are billed at **$0.08/1M tokens**.
+
+Every account gets **5M free tokens/month**.
 
 ## Rate limits
 
@@ -121,3 +152,16 @@ Rate limits depend on the tier configured for your API key.
 | Developer | 60 | 500,000 | 5 |
 | Production | 1,000 | 10,000,000 | 50 |
 | Enterprise | Custom | Custom | Custom |
+
+Cache hits do not consume rate limits.
+
+## Limits
+
+| Limit | Value |
+|-------|-------|
+| Max labels | 200 |
+| Max label length | 50 characters |
+| Max text length | 100,000 characters |
+| Max request body | 1MB |
+| Max sync batch size | 1,000 texts |
+| Max async batch file | 5GB |

@@ -7,11 +7,11 @@ description: "Classify text into exactly one label"
 ## Request
 
 <ParamField body="text" type="string" required>
-  The text to classify
+  The text to classify (1–100,000 characters)
 </ParamField>
 
 <ParamField body="labels" type="string[]">
-  List of possible labels (1-200, max 50 characters each). Required unless `classifier` is provided.
+  List of possible labels (1–200, max 50 characters each). Required unless `classifier` is provided.
 </ParamField>
 
 <ParamField body="classifier" type="string">
@@ -19,11 +19,15 @@ description: "Classify text into exactly one label"
 </ParamField>
 
 <ParamField body="descriptions" type="object">
-  Optional descriptions for each label to improve accuracy
+  Optional descriptions for each label to improve accuracy. Keys are label names, values are description strings.
 </ParamField>
 
-<ParamField body="model" type="string">
-  Model override (optional)
+<ParamField body="examples" type="object">
+  Optional per-label example texts to improve accuracy. Keys are label names, values are arrays of example strings.
+</ParamField>
+
+<ParamField body="source_type" type="string">
+  Optional context for prompt tuning (e.g. `"app review"`, `"support ticket"`)
 </ParamField>
 
 <ParamField body="speed" type="string" default="fast">
@@ -34,14 +38,6 @@ description: "Classify text into exactly one label"
   Set to `false` to bypass cache and force a fresh classification
 </ParamField>
 
-<ParamField body="source_type" type="string">
-  Optional context for prompt tuning (e.g. `"app review"`, `"support ticket"`)
-</ParamField>
-
-<ParamField body="examples" type="object">
-  Optional per-label example texts to improve accuracy. Keys are label names, values are arrays of example strings.
-</ParamField>
-
 ## Response
 
 <ResponseField name="label" type="string">
@@ -49,15 +45,15 @@ description: "Classify text into exactly one label"
 </ResponseField>
 
 <ResponseField name="confidence" type="number">
-  Confidence score between 0 and 1
-</ResponseField>
-
-<ResponseField name="latency_ms" type="number">
-  Processing time in milliseconds
+  Confidence score between 0 and 1 (rounded to 4 decimal places)
 </ResponseField>
 
 <ResponseField name="tokens" type="number">
   Total tokens used
+</ResponseField>
+
+<ResponseField name="latency_ms" type="number">
+  Processing time in milliseconds
 </ResponseField>
 
 <ResponseField name="cached" type="boolean">
