@@ -70,9 +70,9 @@ Fast Batch workflow: create job → upload NDJSON file to presigned URL → star
 
 | Speed | Price / 1M tokens | Latency | Best for |
 |-------|-------------------|---------|----------|
-| Fast | $0.60 | <200ms P95 | Real-time UX, chatbots |
-| Standard | $0.20 | <1s P95 | Background processing |
-| Fast Batch | $0.08 | <15min P95 | Bulk analysis, exports |
+| Fast | $0.60 | under 200ms P95 | Real-time UX, chatbots |
+| Standard | $0.20 | under 1s P95 | Background processing |
+| Fast Batch | $0.08 | under 15min P95 | Bulk analysis, exports |
 
 - Fast and Standard are set via the `speed` parameter on `/v1/classify` and `/v1/tag`.
 - Sync batch endpoints (`/v1/classify/batch`, `/v1/tag/batch`) use Standard speed.
