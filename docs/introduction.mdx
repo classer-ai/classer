@@ -49,7 +49,7 @@ curl -X POST https://api.classer.ai/v1/classify \
   <Card title="From $0.08/1M tokens" icon="dollar-sign">
     10M free tokens/month to get started
   </Card>
-  <Card title="Fast latency" icon="bolt">
+  <Card title="Real-time latency" icon="bolt">
     Fast enough for real-time applications
   </Card>
   <Card title="Zero training" icon="sparkles">
@@ -106,31 +106,11 @@ for (const t of tagged.labels) {
 
 </CodeGroup>
 
-## Pricing
+## Fast Batch processing
 
-| Tier | Per 1M tokens | Latency | Best for |
-|------|--------------|---------|----------|
-| **Fast** | $0.60 | &lt;200ms | Real-time UIs, chatbots |
-| **Standard** | $0.20 | &lt;1s | Background processing, pipelines |
-| **Fast Batch** | $0.08 | Async | Bulk classification of large datasets |
+Classify millions of texts in under 15 minutes at $0.08/1M tokens. Upload an NDJSON file (up to 5GB), start the job, and download results when done.
 
-Fast and Standard are set via the `speed` parameter. Fast Batch pricing applies automatically when using the batch endpoints.
-
-Every account gets **10M free tokens/month** on the standard tier.
-
-## Batch processing
-
-Classify or tag up to 1,000 texts in a single request using the batch endpoints.
-
-```bash
-curl -X POST https://api.classer.ai/v1/classify/batch \
-  -H "Authorization: Bearer $CLASSER_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "texts": ["I need a refund", "How do I upgrade?", "This is spam"],
-    "labels": ["billing", "technical", "sales", "spam"]
-  }'
-```
+See the [Fast Batch guide](/api-reference/batch) for the full workflow.
 
 ## Use cases
 
