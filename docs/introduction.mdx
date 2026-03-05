@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: "Low-cost, fast AI classification API. From $0.08/1M tokens, <200ms latency."
+description: "Low-cost, fast AI classification API. From $0.08/1M tokens."
 ---
 
 ## What is Classer?
@@ -49,7 +49,7 @@ curl -X POST https://api.classer.ai/v1/classify \
   <Card title="From $0.08/1M tokens" icon="dollar-sign">
     10M free tokens/month to get started
   </Card>
-  <Card title="<200ms latency" icon="bolt">
+  <Card title="Fast latency" icon="bolt">
     Fast enough for real-time applications
   </Card>
   <Card title="Zero training" icon="sparkles">
@@ -110,8 +110,8 @@ for (const t of tagged.labels) {
 
 | Tier | Per 1M tokens | Latency | Best for |
 |------|--------------|---------|----------|
-| **Fast** | $0.60 | <200ms | Real-time UIs, chatbots |
-| **Standard** | $0.20 | <1s | Background processing, pipelines |
+| **Fast** | $0.60 | &lt;200ms | Real-time UIs, chatbots |
+| **Standard** | $0.20 | &lt;1s | Background processing, pipelines |
 | **Fast Batch** | $0.08 | Async | Bulk classification of large datasets |
 
 Fast and Standard are set via the `speed` parameter. Fast Batch pricing applies automatically when using the batch endpoints.
