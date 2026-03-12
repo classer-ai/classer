@@ -36,6 +36,7 @@ See [Authentication](/authentication) for details.
 | POST | `/v1/tag/batch` | Batch multi-label tagging (up to 1000 texts) |
 | POST | `/v1/batch` | Create async batch job (upload NDJSON, up to 5GB) |
 | POST | `/v1/batch/{job_id}/start` | Start async batch processing |
+| GET | `/v1/batch` | List batch jobs |
 | GET | `/v1/batch/{job_id}` | Poll batch job status |
 | GET | `/v1/batch/{job_id}/results` | Download batch results |
 | DELETE | `/v1/batch/{job_id}` | Delete batch job |

@@ -61,7 +61,7 @@ result = client.classify(
     },
     speed="fast",                           # optional: "fast" (default) or "standard"
     cache=True,                             # optional: set False to bypass cache
-    source_type="support ticket",           # optional: context for prompt tuning
+    text_type="support ticket",           # optional: context for prompt tuning
     examples={                              # optional: per-label examples
         "billing": ["I need a refund", "Update my card"],
         "technical": ["Can't log in", "App crashed"],
@@ -96,7 +96,7 @@ result = client.tag(
     descriptions={"technology": "Tech industry news"},  # optional
     speed="fast",                           # optional: "fast" (default) or "standard"
     cache=True,                             # optional: set False to bypass cache
-    source_type="news article",             # optional: context for prompt tuning
+    text_type="news article",             # optional: context for prompt tuning
     examples={                              # optional: per-label examples
         "technology": ["New chip released", "Software update"],
     },

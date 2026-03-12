@@ -17,8 +17,8 @@ Process large datasets asynchronously at **$0.08/1M tokens**. Upload an NDJSON f
   <Step title="Start processing">
     `POST /v1/batch/{job_id}/start`
   </Step>
-  <Step title="Poll status">
-    `GET /v1/batch/{job_id}` — until status is `completed`
+  <Step title="List / Poll status">
+    `GET /v1/batch` to list jobs, `GET /v1/batch/{job_id}` to poll until `completed`
   </Step>
   <Step title="Download results">
     `GET /v1/batch/{job_id}/results` — get a download URL
@@ -49,7 +49,7 @@ Pass the classification config (same fields as `/v1/classify`). The `text` field
 | `classifier` | string | No | Saved classifier reference (alternative to `labels`) |
 | `descriptions` | object | No | Per-label descriptions |
 | `examples` | object | No | Per-label example texts |
-| `source_type` | string | No | Context for prompt tuning |
+| `text_type` | string | No | Context for prompt tuning |
 | `mode` | string | No | `single` (default) or `multi` |
 | `threshold` | number | No | Confidence threshold for `multi` mode (default: 0.3) |
 
@@ -98,7 +98,42 @@ Validates the uploaded file exists and starts background processing.
 }
 ```
 
-## 3. Poll status
+## 3. List jobs
+
+**GET** `/v1/batch`
+
+Returns your 20 most recent batch jobs, newest first.
+
+### Response
+
+```json
+[
+  {
+    "job_id": "batch_a1b2c3d4e5f6g7h8",
+    "status": "completed",
+    "requests_total": 5000,
+    "requests_completed": 5000,
+    "created_at": "2026-03-05T10:00:00Z"
+  },
+  {
+    "job_id": "batch_x9y8z7w6v5u4t3s2",
+    "status": "processing",
+    "requests_total": 12000,
+    "requests_completed": 4500,
+    "created_at": "2026-03-05T11:30:00Z"
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `job_id` | string | Job identifier |
+| `status` | string | `pending`, `processing`, `completed`, or `failed` |
+| `requests_total` | number | Total items in the input file |
+| `requests_completed` | number | Successfully processed items |
+| `created_at` | string | Job creation timestamp |
+
+## 4. Poll status
 
 **GET** `/v1/batch/{job_id}`
 
@@ -130,7 +165,7 @@ Validates the uploaded file exists and starts background processing.
 | `actual_tokens` | number | Actual tokens used (null until complete) |
 | `error` | string | Error message if status is `failed` |
 
-## 4. Download results
+## 5. Download results
 
 **GET** `/v1/batch/{job_id}/results`
 
@@ -153,7 +188,7 @@ The download URL points to an NDJSON file with one result per line:
 {"label": "sales", "confidence": 0.91, "tokens": 145}
 ```
 
-## 5. Delete job
+## 6. Delete job
 
 **DELETE** `/v1/batch/{job_id}`
 

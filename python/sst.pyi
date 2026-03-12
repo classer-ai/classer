@@ -46,6 +46,9 @@ class Resource:
         port: float
         type: str
         username: str
+    class SanityRevalidateSecret:
+        type: str
+        value: str
     class SesFromEmail:
         type: str
         value: str
