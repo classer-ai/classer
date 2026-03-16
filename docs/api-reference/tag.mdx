@@ -7,11 +7,11 @@ description: "Tag text with multiple labels"
 ## Request
 
 <ParamField body="text" type="string" required>
-  The text to tag (max ~50k tokens)
+  The text to tag (1–100,000 characters)
 </ParamField>
 
 <ParamField body="labels" type="string[]">
-  List of possible labels (1–200, max 100 characters each). Required unless `classifier` is provided.
+  List of possible labels (1–200, max 50 characters each). Required unless `classifier` is provided.
 </ParamField>
 
 <ParamField body="classifier" type="string">
@@ -34,8 +34,8 @@ description: "Tag text with multiple labels"
   Confidence threshold (0–1). Only labels above this threshold are returned.
 </ParamField>
 
-<ParamField body="speed" type="string" default="standard">
-  Speed tier: `standard` (&lt;1s, $0.20/1M tokens) or `fast` (&lt;200ms, $0.60/1M tokens)
+<ParamField body="speed" type="string" default="fast">
+  Speed tier: `fast` (&lt;200ms, $0.60/1M tokens) or `standard` (&lt;1s, $0.20/1M tokens)
 </ParamField>
 
 <ParamField body="cache" type="boolean" default="true">
