@@ -2,7 +2,9 @@
 
 AI text classification API. No training, no prompt engineering - just pass text and labels.
 
-**From $0.08/1M tokens** · **<200ms latency** · **Zero training required**
+**From $0.08/1M tokens** · **<200ms latency** · **Beats GPT-5 mini accuracy** · **Zero training required**
+
+See [benchmarks](https://classer.ai/benchmarks).
 
 [Website](https://classer.ai) · [Docs](https://docs.classer.ai) · [Dashboard](https://classer.ai/dashboard)
 
