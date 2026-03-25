@@ -75,7 +75,7 @@ print(result.label)  # "hot"
 result = classer.tag(
     text="Breaking: Tech stocks surge amid AI boom",
     labels=["politics", "technology", "finance", "sports"],
-    threshold=0.3
+    threshold=0.5
 )
 for t in result.labels:
     print(f"{t.label}: {t.confidence}")
@@ -95,7 +95,7 @@ console.log(result.label);  // "hot"
 const tagged = await tag({
   text: "Breaking: Tech stocks surge amid AI boom",
   labels: ["politics", "technology", "finance", "sports"],
-  threshold: 0.3
+  threshold: 0.5
 });
 for (const t of tagged.labels) {
   console.log(`${t.label}: ${t.confidence}`);

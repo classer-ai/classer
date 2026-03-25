@@ -1,7 +1,7 @@
 {
   "name": "classer-ai",
-  "version": "0.0.1",
-  "description": "Low-cost, fast AI classification API",
+  "version": "0.0.3",
+  "description": "High-performance AI classification — <200ms latency, up to 100x cheaper, beats GPT-5 mini accuracy",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",

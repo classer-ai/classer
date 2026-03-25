@@ -2,15 +2,13 @@
 export interface ClassifyRequest {
   /** Text to classify */
   text: string;
-  /** List of possible labels (1-100) */
+  /** List of possible labels (1-200) */
   labels?: string[];
   /** Saved classifier name or "name@vN" reference */
   classifier?: string;
   /** Maps label name to description for better accuracy */
   descriptions?: Record<string, string>;
-  /** Model override */
-  model?: string;
-  /** Speed tier: "fast" (default, <200ms) or "standard" (<1s) */
+  /** Speed tier: "standard" (default, <1s) or "fast" (<200ms) */
   speed?: "fast" | "standard";
   /** Set to false to bypass cache. Default: true */
   cache?: boolean;
@@ -27,22 +25,22 @@ export interface ClassifyResponse {
   latency_ms: number;
   /** Whether the response was served from cache */
   cached: boolean;
+  /** Present when using public (unauthenticated) mode */
+  public?: boolean;
 }
 
 export interface TagRequest {
   /** Text to tag */
   text: string;
-  /** List of possible labels (1-100) */
+  /** List of possible labels (1-200) */
   labels?: string[];
   /** Saved classifier name or "name@vN" reference */
   classifier?: string;
   /** Maps label name to description for better accuracy */
   descriptions?: Record<string, string>;
-  /** Model override */
-  model?: string;
-  /** Confidence threshold (0-1). Default: 0.3 */
+  /** Confidence threshold (0-1). Default: 0.5 */
   threshold?: number;
-  /** Speed tier: "fast" (default, <200ms) or "standard" (<1s) */
+  /** Speed tier: "standard" (default, <1s) or "fast" (<200ms) */
   speed?: "fast" | "standard";
   /** Set to false to bypass cache. Default: true */
   cache?: boolean;
@@ -62,13 +60,13 @@ export interface TagResponse {
   latency_ms: number;
   /** Whether the response was served from cache */
   cached: boolean;
+  /** Present when using public (unauthenticated) mode */
+  public?: boolean;
 }
 
 export interface ClasserConfig {
   /** API key for authentication. Optional for local development, required for production. */
   apiKey?: string;
-  /** Base URL for the API. Defaults to https://api.classer.ai */
-  baseUrl?: string;
   /** Request timeout in seconds. Default: 30 */
   timeout?: number;
 }
@@ -86,17 +84,16 @@ class ClasserError extends Error {
 
 class ClasserClient {
   private apiKey: string;
-  private baseUrl: string;
   private timeout: number;
+  private static readonly BASE_URL = "https://api.classer.ai";
 
   constructor(config: ClasserConfig = {}) {
     this.apiKey = config.apiKey || process.env.CLASSER_API_KEY || "";
-    this.baseUrl = config.baseUrl || "https://api.classer.ai";
     this.timeout = config.timeout ?? 30;
   }
 
   private async request<T>(endpoint: string, body: unknown): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = `${ClasserClient.BASE_URL}${endpoint}`;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -132,7 +129,7 @@ class ClasserClient {
       let detail: string | undefined;
       try {
         const errorData = await response.json();
-        detail = typeof errorData === "object" && errorData !== null && "detail" in errorData
+        detail = typeof errorData === "object" && errorData !== null && "detail" in errorData && errorData.detail != null
           ? String(errorData.detail)
           : undefined;
       } catch {
@@ -175,7 +172,7 @@ class ClasserClient {
    * const result = await classer.tag({
    *   text: "Breaking: Tech stocks surge amid AI boom",
    *   labels: ["politics", "technology", "finance", "sports"],
-   *   threshold: 0.3
+   *   threshold: 0.5
    * });
    * for (const tag of result.labels) {
    *   console.log(`${tag.label}: ${tag.confidence}`);

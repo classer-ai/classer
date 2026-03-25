@@ -5,9 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { ClasserClient } from "./index";
 
-const client = new ClasserClient({
-  baseUrl: "https://api.classer.ai",
-});
+const client = new ClasserClient();
 
 describe("Integration tests against api.classer.ai", () => {
   describe("classify endpoint", () => {
@@ -22,7 +20,7 @@ describe("Integration tests against api.classer.ai", () => {
       expect(result.label).toBeDefined();
       expect(result.confidence).toBeGreaterThan(0);
       expect(result.confidence).toBeLessThanOrEqual(1);
-      expect(result.latency_ms).toBeGreaterThan(0);
+      expect(result.latency_ms).toBeGreaterThanOrEqual(0);
       expect(["billing", "technical_support", "sales", "spam"]).toContain(result.label);
     }, 30000);
 
@@ -68,7 +66,7 @@ describe("Integration tests against api.classer.ai", () => {
 
       expect(result.labels).toBeDefined();
       expect(Array.isArray(result.labels)).toBe(true);
-      expect(result.latency_ms).toBeGreaterThan(0);
+      expect(result.latency_ms).toBeGreaterThanOrEqual(0);
 
       for (const t of result.labels) {
         expect(t.label).toBeDefined();

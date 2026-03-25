@@ -39,7 +39,7 @@ import { ClasserClient } from "classer-ai";
 
 const client = new ClasserClient({
   apiKey: "your-api-key",
-  baseUrl: "https://api.classer.ai"  // optional
+  timeout: 30  // optional, in seconds
 });
 ```
 
@@ -58,13 +58,8 @@ const result = await client.classify({
     technical: "Login, bugs, errors",
     sales: "Pricing or plan questions",
   },
-  speed: "fast",                              // optional: "fast" (default) or "standard"
+  speed: "standard",                          // optional: "standard" (default, <1s) or "fast" (<200ms)
   cache: true,                                // optional: set false to bypass cache
-  sourceType: "support ticket",               // optional: context for prompt tuning
-  examples: {                                 // optional: per-label examples
-    billing: ["I need a refund", "Update my card"],
-    technical: ["Can't log in", "App crashed"],
-  },
 });
 
 result.label        // "technical"
@@ -91,14 +86,10 @@ Multi-label tagging — returns all labels that exceed the confidence threshold.
 const result = await client.tag({
   text: "Breaking: Tech stocks surge amid AI boom",
   labels: ["politics", "technology", "finance", "sports"],
-  threshold: 0.3,                              // optional (default: 0.3)
+  threshold: 0.5,                              // optional (default: 0.5)
   descriptions: { technology: "Tech industry news" },  // optional
-  speed: "fast",                               // optional: "fast" (default) or "standard"
+  speed: "standard",                           // optional: "standard" (default, <1s) or "fast" (<200ms)
   cache: true,                                 // optional: set false to bypass cache
-  sourceType: "news article",                  // optional: context for prompt tuning
-  examples: {                                  // optional: per-label examples
-    technology: ["New chip released", "Software update"],
-  },
 });
 
 for (const t of result.labels) {
@@ -164,8 +155,6 @@ interface ClassifyRequest {
   descriptions?: Record<string, string>;
   speed?: "fast" | "standard";
   cache?: boolean;
-  sourceType?: string;
-  examples?: Record<string, string[]>;
 }
 ```
 
@@ -190,11 +179,9 @@ interface TagRequest {
   labels?: string[];
   classifier?: string;
   descriptions?: Record<string, string>;
-  threshold?: number;  // default: 0.3
+  threshold?: number;  // default: 0.5
   speed?: "fast" | "standard";
   cache?: boolean;
-  sourceType?: string;
-  examples?: Record<string, string[]>;
 }
 ```
 

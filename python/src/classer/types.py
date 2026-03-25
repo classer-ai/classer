@@ -13,6 +13,7 @@ class ClassifyResponse:
     tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
+    public: Optional[bool] = None
 
 
 @dataclass
@@ -31,3 +32,4 @@ class TagResponse:
     tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
+    public: Optional[bool] = None

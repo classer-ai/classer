@@ -16,10 +16,11 @@ from .types import (
 class ClasserClient:
     """Client for the Classer API."""
 
+    BASE_URL = "https://api.classer.ai"
+
     def __init__(
         self,
         api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
         timeout: float = 30.0,
     ):
         """
@@ -27,22 +28,25 @@ class ClasserClient:
 
         Args:
             api_key: API key for authentication. Falls back to CLASSER_API_KEY env var.
-            base_url: Base URL for the API. Defaults to https://api.classer.ai.
             timeout: Request timeout in seconds.
         """
         self.api_key = api_key or os.environ.get("CLASSER_API_KEY", "")
-        self.base_url = base_url or "https://api.classer.ai"
         self.timeout = timeout
 
     def _request(self, endpoint: str, body: dict) -> dict:
         """Make a POST request to the API."""
-        url = f"{self.base_url}{endpoint}"
+        url = f"{self.BASE_URL}{endpoint}"
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
-        response = httpx.post(url, json=body, headers=headers, timeout=self.timeout)
+        try:
+            response = httpx.post(url, json=body, headers=headers, timeout=self.timeout)
+        except httpx.TimeoutException as e:
+            raise ClasserError("Request timed out", detail=str(e)) from e
+        except httpx.HTTPError as e:
+            raise ClasserError(f"Request failed: {e}", detail=str(e)) from e
 
         if not response.is_success:
             detail = None
@@ -51,6 +55,8 @@ class ClasserClient:
                 detail = error_data.get("detail") if isinstance(error_data, dict) else None
             except (ValueError, TypeError):
                 detail = response.text[:200] if response.text else None
+            if detail is None and response.status_code == 401:
+                detail = "Invalid or missing API key"
             raise ClasserError(
                 f"Request failed with status {response.status_code}",
                 status=response.status_code,
@@ -65,7 +71,6 @@ class ClasserClient:
         labels: Optional[list[str]] = None,
         classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
-        model: Optional[str] = None,
         speed: Optional[str] = None,
         cache: Optional[bool] = None,
         threshold: Optional[float] = None,
@@ -74,12 +79,10 @@ class ClasserClient:
         body: dict = {"text": text}
         if classifier:
             body["classifier"] = classifier
-        if labels:
+        if labels is not None:
             body["labels"] = labels
-        if descriptions:
+        if descriptions is not None:
             body["descriptions"] = descriptions
-        if model:
-            body["model"] = model
         if threshold is not None:
             body["threshold"] = threshold
         if speed:
@@ -94,7 +97,6 @@ class ClasserClient:
         labels: Optional[list[str]] = None,
         classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
-        model: Optional[str] = None,
         speed: Optional[str] = None,
         cache: Optional[bool] = None,
     ) -> ClassifyResponse:
@@ -103,11 +105,10 @@ class ClasserClient:
 
         Args:
             text: Text to classify.
-            labels: List of possible labels (1-100).
+            labels: List of possible labels (1-200).
             classifier: Saved classifier name or "name@vN" reference.
             descriptions: Maps label name to description for better accuracy.
-            model: Model override.
-            speed: Speed tier — "fast" (default, <200ms) or "standard" (<1s).
+            speed: Speed tier — "standard" (default, <1s) or "fast" (<200ms).
             cache: Set to False to bypass cache. Default: True.
 
         Returns:
@@ -120,9 +121,12 @@ class ClasserClient:
             ... )
             >>> print(result.label)  # "technical_support"
         """
+        if not labels and not classifier:
+            raise ClasserError("Either 'labels' or 'classifier' must be provided")
+
         body = self._build_body(
             text, labels=labels, classifier=classifier,
-            descriptions=descriptions, model=model, speed=speed, cache=cache,
+            descriptions=descriptions, speed=speed, cache=cache,
         )
 
         data = self._request("/v1/classify", body)
@@ -133,6 +137,7 @@ class ClasserClient:
             tokens=data.get("tokens", 0),
             latency_ms=data.get("latency_ms", 0),
             cached=data.get("cached", False),
+            public=data.get("public"),
         )
 
     def tag(
@@ -141,7 +146,6 @@ class ClasserClient:
         labels: Optional[list[str]] = None,
         classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
-        model: Optional[str] = None,
         threshold: Optional[float] = None,
         speed: Optional[str] = None,
         cache: Optional[bool] = None,
@@ -151,12 +155,11 @@ class ClasserClient:
 
         Args:
             text: Text to tag.
-            labels: List of possible labels (1-100).
+            labels: List of possible labels (1-200).
             classifier: Saved classifier name or "name@vN" reference.
             descriptions: Maps label name to description for better accuracy.
-            model: Model override.
-            threshold: Confidence threshold (0-1). Default: 0.3.
-            speed: Speed tier — "fast" (default, <200ms) or "standard" (<1s).
+            threshold: Confidence threshold (0-1). Default: 0.5.
+            speed: Speed tier — "standard" (default, <1s) or "fast" (<200ms).
             cache: Set to False to bypass cache. Default: True.
 
         Returns:
@@ -166,14 +169,17 @@ class ClasserClient:
             >>> result = classer.tag(
             ...     text="Breaking: Tech stocks surge amid AI boom",
             ...     labels=["politics", "technology", "finance", "sports"],
-            ...     threshold=0.3
+            ...     threshold=0.5
             ... )
             >>> for tag in result.labels:
             ...     print(f"{tag.label}: {tag.confidence}")
         """
+        if not labels and not classifier:
+            raise ClasserError("Either 'labels' or 'classifier' must be provided")
+
         body = self._build_body(
             text, labels=labels, classifier=classifier,
-            descriptions=descriptions, model=model, threshold=threshold,
+            descriptions=descriptions, threshold=threshold,
             speed=speed, cache=cache,
         )
 
@@ -189,4 +195,5 @@ class ClasserClient:
             tokens=data.get("tokens", 0),
             latency_ms=data.get("latency_ms", 0),
             cached=data.get("cached", False),
+            public=data.get("public"),
         )

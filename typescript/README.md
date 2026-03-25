@@ -1,6 +1,12 @@
-# classer-ai
+# [classer-ai](https://classer.ai)
 
-Low-cost, fast AI classification API. 10x cheaper than GPT, <200ms latency.
+AI text classification API. No training, no prompt engineering - just pass text and labels.
+
+**From $0.08/1M tokens** · **<200ms latency** · **Beats GPT-5 mini accuracy** · **Zero training required**
+
+See [benchmarks](https://classer.ai/benchmarks).
+
+[Website](https://classer.ai) · [Docs](https://docs.classer.ai) · [Dashboard](https://classer.ai/dashboard)
 
 ## Installation
 
@@ -12,9 +18,6 @@ npm install classer-ai
 
 ```typescript
 import { classify, tag } from "classer-ai";
-
-// Set your API key
-process.env.CLASSER_API_KEY = "your-api-key";
 
 // Single-label classification
 const result = await classify({
@@ -40,7 +43,7 @@ console.log(lead.label); // "hot"
 const tagged = await tag({
   text: "Breaking: Tech stocks surge amid AI boom",
   labels: ["politics", "technology", "finance", "sports"],
-  threshold: 0.3
+  threshold: 0.5
 });
 for (const t of tagged.labels) {
   console.log(`${t.label}: ${t.confidence}`);
@@ -50,6 +53,8 @@ for (const t of tagged.labels) {
 ```
 
 ## Configuration
+
+No API key is needed to get started. To unlock higher rate limits, get an API key from [classer.ai/api-keys](https://classer.ai/api-keys).
 
 ```bash
 export CLASSER_API_KEY=your-api-key
@@ -61,8 +66,7 @@ Or configure programmatically:
 import { ClasserClient } from "classer-ai";
 
 const client = new ClasserClient({
-  apiKey: "your-api-key",
-  baseUrl: "https://api.classer.ai"  // optional
+  apiKey: "your-api-key"
 });
 ```
 
@@ -75,11 +79,10 @@ Classify text into exactly one of the provided labels.
 ```typescript
 const result = await classify({
   text: string,             // Text to classify
-  labels?: string[],        // 1-100 possible labels
+  labels?: string[],        // 1-200 possible labels
   classifier?: string,      // Saved classifier name or "name@vN"
   descriptions?: Record<string, string>,
-  model?: string,
-  speed?: "fast" | "standard",  // "fast" (default, <200ms) or "standard" (<1s)
+  speed?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
   cache?: boolean           // Set to false to bypass cache. Default: true
 });
 
@@ -98,12 +101,11 @@ Multi-label tagging — returns all labels above a confidence threshold.
 ```typescript
 const result = await tag({
   text: string,
-  labels?: string[],        // 1-100 possible labels
+  labels?: string[],        // 1-200 possible labels
   classifier?: string,      // Saved classifier name or "name@vN"
   descriptions?: Record<string, string>,
-  threshold?: number,       // Default: 0.3
-  model?: string,
-  speed?: "fast" | "standard",  // "fast" (default, <200ms) or "standard" (<1s)
+  threshold?: number,       // Default: 0.5
+  speed?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
   cache?: boolean           // Set to false to bypass cache. Default: true
 });
 
@@ -113,6 +115,29 @@ result.tokens       // Total tokens used
 result.latency_ms   // Processing time in ms
 result.cached       // Whether served from cache
 ```
+
+## Error Handling
+
+```typescript
+import { ClasserError } from "classer-ai";
+
+try {
+  const result = await classify({ text: "hello", labels: ["a", "b"] });
+} catch (e) {
+  if (e instanceof ClasserError) {
+    console.error(e.status);  // HTTP status code
+    console.error(e.detail);  // Error detail from API
+  }
+}
+```
+
+## Documentation
+
+Full API reference and guides at [docs.classer.ai](https://docs.classer.ai).
+
+## GitHub
+
+[github.com/classer-ai/classer-js](https://github.com/classer-ai/classer-js)
 
 ## License
 

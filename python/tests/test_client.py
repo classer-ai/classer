@@ -19,17 +19,11 @@ from classer import (
 class TestClasserClient:
     """Tests for ClasserClient class."""
 
-    def test_constructor_uses_default_base_url(self):
-        client = ClasserClient()
-        assert client.base_url == "https://api.classer.ai"
-
     def test_constructor_accepts_custom_config(self):
         client = ClasserClient(
             api_key="test-key",
-            base_url="https://custom.api.com",
         )
         assert client.api_key == "test-key"
-        assert client.base_url == "https://custom.api.com"
 
     def test_constructor_reads_api_key_from_environment(self):
         with patch.dict(os.environ, {"CLASSER_API_KEY": "env-api-key"}):
@@ -142,19 +136,42 @@ class TestClassify:
         client = ClasserClient(api_key="test-key")
 
         with pytest.raises(ClasserError) as exc_info:
-            client.classify(text="test", labels=[])
+            client.classify(text="test", labels=["a"], classifier="c")
 
         assert exc_info.value.status == 400
         assert exc_info.value.detail == "labels cannot be empty"
 
     @patch("classer.client.httpx.post")
-    def test_classify_handles_network_errors(self, mock_post):
-        mock_post.side_effect = Exception("Network error")
+    def test_classify_handles_timeout_errors(self, mock_post):
+        import httpx as _httpx
+        mock_post.side_effect = _httpx.ReadTimeout("timed out")
 
         client = ClasserClient(api_key="test-key")
 
-        with pytest.raises(Exception, match="Network error"):
+        with pytest.raises(ClasserError, match="timed out"):
             client.classify(text="test", labels=["a", "b"])
+
+    @patch("classer.client.httpx.post")
+    def test_classify_handles_network_errors(self, mock_post):
+        import httpx as _httpx
+        mock_post.side_effect = _httpx.ConnectError("connection refused")
+
+        client = ClasserClient(api_key="test-key")
+
+        with pytest.raises(ClasserError, match="connection refused"):
+            client.classify(text="test", labels=["a", "b"])
+
+    def test_classify_raises_without_labels_or_classifier(self):
+        client = ClasserClient(api_key="test-key")
+
+        with pytest.raises(ClasserError, match="Either 'labels' or 'classifier'"):
+            client.classify(text="test")
+
+    def test_classify_raises_with_empty_labels_and_no_classifier(self):
+        client = ClasserClient(api_key="test-key")
+
+        with pytest.raises(ClasserError, match="Either 'labels' or 'classifier'"):
+            client.classify(text="test", labels=[])
 
     @patch("classer.client.httpx.post")
     def test_classify_does_not_send_mode(self, mock_post):
@@ -196,24 +213,6 @@ class TestClassify:
         assert body["classifier"] == "support-tickets@v2"
         assert "labels" not in body
         assert result.label == "billing"
-
-    @patch("classer.client.httpx.post")
-    def test_classify_with_model_override(self, mock_post):
-        mock_response = MagicMock()
-        mock_response.is_success = True
-        mock_response.json.return_value = {
-            "label": "a",
-            "confidence": 0.9,
-            "latency_ms": 30,
-        }
-        mock_post.return_value = mock_response
-
-        client = ClasserClient(api_key="test-key")
-        client.classify(text="test", labels=["a", "b"], model="openai/gpt-4o-mini")
-
-        call_args = mock_post.call_args
-        body = call_args[1]["json"]
-        assert body["model"] == "openai/gpt-4o-mini"
 
     @patch("classer.client.httpx.post")
     def test_classify_omits_none_optional_fields(self, mock_post):
@@ -275,7 +274,7 @@ class TestTag:
         result = client.tag(
             text="Tech stocks surge amid AI boom",
             labels=["politics", "technology", "finance", "sports"],
-            threshold=0.3,
+            threshold=0.5,
         )
 
         assert isinstance(result, TagResponse)
@@ -424,23 +423,6 @@ class TestTag:
         }
 
     @patch("classer.client.httpx.post")
-    def test_tag_with_model_override(self, mock_post):
-        mock_response = MagicMock()
-        mock_response.is_success = True
-        mock_response.json.return_value = {
-            "labels": [{"label": "a", "confidence": 0.8}],
-            "latency_ms": 30,
-        }
-        mock_post.return_value = mock_response
-
-        client = ClasserClient(api_key="test-key")
-        client.tag(text="test", labels=["a", "b"], model="openai/gpt-4o-mini")
-
-        call_args = mock_post.call_args
-        body = call_args[1]["json"]
-        assert body["model"] == "openai/gpt-4o-mini"
-
-    @patch("classer.client.httpx.post")
     def test_tag_handles_api_errors(self, mock_post):
         mock_response = MagicMock()
         mock_response.is_success = False
@@ -451,10 +433,16 @@ class TestTag:
         client = ClasserClient(api_key="test-key")
 
         with pytest.raises(ClasserError) as exc_info:
-            client.tag(text="test", labels=["only_one"])
+            client.tag(text="test", labels=["only_one"], classifier="c")
 
         assert exc_info.value.status == 422
         assert exc_info.value.detail == "At least 2 labels required"
+
+    def test_tag_raises_without_labels_or_classifier(self):
+        client = ClasserClient(api_key="test-key")
+
+        with pytest.raises(ClasserError, match="Either 'labels' or 'classifier'"):
+            client.tag(text="test")
 
     @patch("classer.client.httpx.post")
     def test_tag_defaults_when_fields_missing(self, mock_post):
@@ -552,10 +540,27 @@ class TestClasserError:
         assert exc_info.value.detail == "Validation error"
 
     @patch("classer.client.httpx.post")
+    def test_error_401_provides_useful_detail(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.is_success = False
+        mock_response.status_code = 401
+        mock_response.json.return_value = {}
+        mock_post.return_value = mock_response
+
+        client = ClasserClient(api_key="bad-key")
+
+        with pytest.raises(ClasserError) as exc_info:
+            client.classify(text="test", labels=["a", "b"])
+
+        assert exc_info.value.status == 401
+        assert exc_info.value.detail == "Invalid or missing API key"
+
+    @patch("classer.client.httpx.post")
     def test_error_handles_non_json_responses(self, mock_post):
         mock_response = MagicMock()
         mock_response.is_success = False
         mock_response.status_code = 500
+        mock_response.text = ""
         mock_response.json.side_effect = ValueError("Invalid JSON")
         mock_post.return_value = mock_response
 
@@ -580,6 +585,28 @@ class TestClasserError:
     def test_error_str_without_status(self):
         err = ClasserError("Something went wrong")
         assert str(err) == "Something went wrong"
+
+
+class TestBuildBody:
+    """Tests for _build_body edge cases."""
+
+    def test_empty_labels_list_is_included_in_body(self):
+        body = ClasserClient._build_body(text="test", labels=[], classifier="c")
+        assert "labels" in body
+        assert body["labels"] == []
+
+    def test_empty_descriptions_dict_is_included_in_body(self):
+        body = ClasserClient._build_body(text="test", labels=["a"], descriptions={})
+        assert "descriptions" in body
+        assert body["descriptions"] == {}
+
+    def test_none_labels_excluded_from_body(self):
+        body = ClasserClient._build_body(text="test", labels=None, classifier="c")
+        assert "labels" not in body
+
+    def test_none_descriptions_excluded_from_body(self):
+        body = ClasserClient._build_body(text="test", labels=["a"])
+        assert "descriptions" not in body
 
 
 class TestRequestHeaders:
@@ -638,11 +665,11 @@ class TestRequestHeaders:
         assert call_args[1]["headers"]["Content-Type"] == "application/json"
 
 
-class TestCustomBaseUrl:
-    """Tests for custom base URL handling."""
+class TestEndpoints:
+    """Tests for correct endpoint URLs."""
 
     @patch("classer.client.httpx.post")
-    def test_uses_custom_base_url(self, mock_post):
+    def test_classify_uses_correct_endpoint(self, mock_post):
         mock_response = MagicMock()
         mock_response.is_success = True
         mock_response.json.return_value = {
@@ -652,11 +679,11 @@ class TestCustomBaseUrl:
         }
         mock_post.return_value = mock_response
 
-        client = ClasserClient(base_url="https://custom.classer.ai")
+        client = ClasserClient()
         client.classify(text="test", labels=["a", "b"])
 
         call_args = mock_post.call_args
-        assert call_args[0][0] == "https://custom.classer.ai/v1/classify"
+        assert call_args[0][0] == "https://api.classer.ai/v1/classify"
 
     @patch("classer.client.httpx.post")
     def test_tag_uses_correct_endpoint(self, mock_post):
@@ -668,8 +695,8 @@ class TestCustomBaseUrl:
         }
         mock_post.return_value = mock_response
 
-        client = ClasserClient(base_url="https://custom.classer.ai")
+        client = ClasserClient()
         client.tag(text="test", labels=["a", "b"])
 
         call_args = mock_post.call_args
-        assert call_args[0][0] == "https://custom.classer.ai/v1/tag"
+        assert call_args[0][0] == "https://api.classer.ai/v1/tag"

@@ -36,7 +36,6 @@ def classify(
     labels: Optional[list[str]] = None,
     classifier: Optional[str] = None,
     descriptions: Optional[dict[str, str]] = None,
-    model: Optional[str] = None,
     speed: Optional[str] = None,
     cache: Optional[bool] = None,
 ) -> ClassifyResponse:
@@ -46,7 +45,7 @@ def classify(
     """
     return _get_default_client().classify(
         text, labels=labels, classifier=classifier,
-        descriptions=descriptions, model=model, speed=speed, cache=cache,
+        descriptions=descriptions, speed=speed, cache=cache,
     )
 
 
@@ -55,7 +54,6 @@ def tag(
     labels: Optional[list[str]] = None,
     classifier: Optional[str] = None,
     descriptions: Optional[dict[str, str]] = None,
-    model: Optional[str] = None,
     threshold: Optional[float] = None,
     speed: Optional[str] = None,
     cache: Optional[bool] = None,
@@ -66,6 +64,6 @@ def tag(
     """
     return _get_default_client().tag(
         text, labels=labels, classifier=classifier,
-        descriptions=descriptions, model=model, threshold=threshold,
+        descriptions=descriptions, threshold=threshold,
         speed=speed, cache=cache,
     )

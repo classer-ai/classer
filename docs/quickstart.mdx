@@ -78,7 +78,7 @@ Return all labels that match above a confidence threshold.
 result = classer.tag(
     text="Breaking: Tech stocks surge amid AI boom",
     labels=["politics", "technology", "finance", "sports"],
-    threshold=0.3
+    threshold=0.5
 )
 
 for t in result.labels:
@@ -93,7 +93,7 @@ import { tag } from "classer-ai";
 const result = await tag({
   text: "Breaking: Tech stocks surge amid AI boom",
   labels: ["politics", "technology", "finance", "sports"],
-  threshold: 0.3
+  threshold: 0.5
 });
 
 for (const t of result.labels) {
@@ -110,7 +110,7 @@ curl -X POST https://api.classer.ai/v1/tag \
   -d '{
     "text": "Breaking: Tech stocks surge amid AI boom",
     "labels": ["politics", "technology", "finance", "sports"],
-    "threshold": 0.3
+    "threshold": 0.5
   }'
 ```
 

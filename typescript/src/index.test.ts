@@ -33,7 +33,6 @@ describe("ClasserClient", () => {
     it("should accept custom config", () => {
       const client = new ClasserClient({
         apiKey: "test-key",
-        baseUrl: "https://custom.api.com",
       });
       expect(client).toBeDefined();
     });
@@ -138,23 +137,6 @@ describe("ClasserClient", () => {
       expect(result.label).toBe("billing");
     });
 
-    it("should send model when provided", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
-      });
-
-      const client = new ClasserClient({ apiKey: "test-key" });
-      await client.classify({
-        text: "test",
-        labels: ["a", "b"],
-        model: "openai/gpt-4o-mini",
-      });
-
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.model).toBe("openai/gpt-4o-mini");
-    });
-
     it("should not send mode or threshold", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -215,7 +197,7 @@ describe("ClasserClient", () => {
       const result = await client.tag({
         text: "Tech stocks surge amid AI boom",
         labels: ["politics", "technology", "finance", "sports"],
-        threshold: 0.3,
+        threshold: 0.5,
       });
 
       expect(result.labels).toHaveLength(2);
@@ -339,26 +321,6 @@ describe("ClasserClient", () => {
       });
     });
 
-    it("should send model when provided", async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          labels: [{ label: "a", confidence: 0.8 }],
-          latency_ms: 30,
-        }),
-      });
-
-      const client = new ClasserClient({ apiKey: "test-key" });
-      await client.tag({
-        text: "test",
-        labels: ["a", "b"],
-        model: "openai/gpt-4o-mini",
-      });
-
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.model).toBe("openai/gpt-4o-mini");
-    });
-
     it("should handle API errors", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
@@ -378,7 +340,7 @@ describe("ClasserClient", () => {
       }
     });
 
-    it("should use correct endpoint with custom base URL", async () => {
+    it("should use correct endpoint", async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -387,10 +349,10 @@ describe("ClasserClient", () => {
         }),
       });
 
-      const client = new ClasserClient({ baseUrl: "https://custom.classer.ai" });
+      const client = new ClasserClient();
       await client.tag({ text: "test", labels: ["a", "b"] });
 
-      expect(mockFetch.mock.calls[0][0]).toBe("https://custom.classer.ai/v1/tag");
+      expect(mockFetch.mock.calls[0][0]).toBe("https://api.classer.ai/v1/tag");
     });
   });
 });
@@ -591,24 +553,24 @@ describe("Timeout", () => {
   });
 });
 
-describe("Custom base URL", () => {
+describe("Endpoints", () => {
   beforeEach(() => {
     mockFetch.mockReset();
   });
 
-  it("should use custom base URL for classify", async () => {
+  it("should use correct URL for classify", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ label: "a", confidence: 0.9, latency_ms: 30 }),
     });
 
-    const client = new ClasserClient({ baseUrl: "https://custom.classer.ai" });
+    const client = new ClasserClient();
     await client.classify({ text: "test", labels: ["a", "b"] });
 
-    expect(mockFetch.mock.calls[0][0]).toBe("https://custom.classer.ai/v1/classify");
+    expect(mockFetch.mock.calls[0][0]).toBe("https://api.classer.ai/v1/classify");
   });
 
-  it("should use custom base URL for tag", async () => {
+  it("should use correct URL for tag", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -617,9 +579,9 @@ describe("Custom base URL", () => {
       }),
     });
 
-    const client = new ClasserClient({ baseUrl: "https://custom.classer.ai" });
+    const client = new ClasserClient();
     await client.tag({ text: "test", labels: ["a", "b"] });
 
-    expect(mockFetch.mock.calls[0][0]).toBe("https://custom.classer.ai/v1/tag");
+    expect(mockFetch.mock.calls[0][0]).toBe("https://api.classer.ai/v1/tag");
   });
 });

@@ -39,7 +39,6 @@ from classer import ClasserClient
 
 client = ClasserClient(
     api_key="your-api-key",
-    base_url="https://api.classer.ai",  # optional
     timeout=30.0  # optional, in seconds
 )
 ```
@@ -59,13 +58,8 @@ result = client.classify(
         "technical": "Login, bugs, errors",
         "sales": "Pricing or plan questions",
     },
-    speed="fast",                           # optional: "fast" (default) or "standard"
+    speed="standard",                       # optional: "standard" (default, <1s) or "fast" (<200ms)
     cache=True,                             # optional: set False to bypass cache
-    text_type="support ticket",           # optional: context for prompt tuning
-    examples={                              # optional: per-label examples
-        "billing": ["I need a refund", "Update my card"],
-        "technical": ["Can't log in", "App crashed"],
-    },
 )
 
 result.label        # "technical"
@@ -92,14 +86,10 @@ Multi-label tagging — returns all labels that exceed the confidence threshold.
 result = client.tag(
     text="Breaking: Tech stocks surge amid AI boom",
     labels=["politics", "technology", "finance", "sports"],
-    threshold=0.3,                          # optional (default: 0.3)
+    threshold=0.5,                          # optional (default: 0.5)
     descriptions={"technology": "Tech industry news"},  # optional
-    speed="fast",                           # optional: "fast" (default) or "standard"
+    speed="standard",                       # optional: "standard" (default, <1s) or "fast" (<200ms)
     cache=True,                             # optional: set False to bypass cache
-    text_type="news article",             # optional: context for prompt tuning
-    examples={                              # optional: per-label examples
-        "technology": ["New chip released", "Software update"],
-    },
 )
 
 for t in result.labels:

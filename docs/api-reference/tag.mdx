@@ -7,11 +7,11 @@ description: "Tag text with multiple labels"
 ## Request
 
 <ParamField body="text" type="string" required>
-  The text to tag (1–100,000 characters)
+  The text to tag (max ~50k tokens)
 </ParamField>
 
 <ParamField body="labels" type="string[]">
-  List of possible labels (1–200, max 50 characters each). Required unless `classifier` is provided.
+  List of possible labels (1–200, max 100 characters each). Required unless `classifier` is provided.
 </ParamField>
 
 <ParamField body="classifier" type="string">
@@ -30,12 +30,12 @@ description: "Tag text with multiple labels"
   Optional context for prompt tuning (e.g. `"app review"`, `"support ticket"`)
 </ParamField>
 
-<ParamField body="threshold" type="number" default="0.3">
+<ParamField body="threshold" type="number" default="0.5">
   Confidence threshold (0–1). Only labels above this threshold are returned.
 </ParamField>
 
-<ParamField body="speed" type="string" default="fast">
-  Speed tier: `fast` (&lt;200ms, $0.60/1M tokens) or `standard` (&lt;1s, $0.20/1M tokens)
+<ParamField body="speed" type="string" default="standard">
+  Speed tier: `standard` (&lt;1s, $0.20/1M tokens) or `fast` (&lt;200ms, $0.60/1M tokens)
 </ParamField>
 
 <ParamField body="cache" type="boolean" default="true">
@@ -76,7 +76,7 @@ import classer
 result = classer.tag(
     text="Breaking: Tech stocks surge amid AI boom",
     labels=["politics", "technology", "finance", "sports"],
-    threshold=0.3
+    threshold=0.5
 )
 
 for t in result.labels:
@@ -91,7 +91,7 @@ import { tag } from "classer-ai";
 const result = await tag({
   text: "Breaking: Tech stocks surge amid AI boom",
   labels: ["politics", "technology", "finance", "sports"],
-  threshold: 0.3
+  threshold: 0.5
 });
 
 for (const t of result.labels) {
@@ -108,7 +108,7 @@ curl -X POST https://api.classer.ai/v1/tag \
   -d '{
     "text": "Breaking: Tech stocks surge amid AI boom",
     "labels": ["politics", "technology", "finance", "sports"],
-    "threshold": 0.3
+    "threshold": 0.5
   }'
 ```
 
