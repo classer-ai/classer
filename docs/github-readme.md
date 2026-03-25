@@ -72,7 +72,7 @@ for t in result.labels:
 # finance: 0.78
 ```
 
-**Fast Batch** - process millions of texts at $0.08/1M tokens:
+**Async Batch** - process millions of texts at $0.08/1M tokens:
 
 ```bash
 # 1. Create a batch job
@@ -93,7 +93,7 @@ curl "https://api.classer.ai/v1/batch/$JOB_ID/results" \
   -H "Authorization: Bearer $CLASSER_API_KEY"
 ```
 
-Up to 5GB per file. See the [Fast Batch docs](https://docs.classer.ai/api-reference/batch) for the full workflow.
+Up to 5GB per file. See the [Async Batch docs](https://docs.classer.ai/api-reference/batch) for the full workflow.
 
 ## Speed Tiers
 
@@ -101,7 +101,7 @@ Up to 5GB per file. See the [Fast Batch docs](https://docs.classer.ai/api-refere
 |-------|-------------------|---------|
 | **Fast** | $0.60 | <200ms P95 |
 | **Standard** | $0.20 | <1s P95 |
-| **Fast Batch** | $0.08 | <15min P95 |
+| **Async Batch** | $0.08 | <15min P95 |
 
 Every account gets **10M free tokens/month** - no credit card required.
 

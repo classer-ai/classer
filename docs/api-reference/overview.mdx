@@ -60,14 +60,13 @@ All endpoints accept JSON with `Content-Type: application/json`. Maximum request
 
 ## Response format
 
-Classification responses (`/v1/classify`, `/v1/tag`, `/v1/binary`) include:
+Classification responses (`/v1/classify`, `/v1/tag`) include:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `tokens` | number | Total tokens used |
 | `latency_ms` | number | Processing time in milliseconds |
 | `cached` | boolean | Whether the response was served from cache |
-| `public` | boolean | Present when using public (unauthenticated) mode |
 
 Plus endpoint-specific fields (`label`, `confidence`, `labels`, etc.).
 
@@ -92,10 +91,13 @@ All classification endpoints return these headers:
 | `X-Request-ID` | Unique request identifier |
 | `X-Cache` | `HIT` or `MISS` |
 | `X-Cache-Key` | First 16 characters of cache key |
-| `X-Tokens-Used` | Token count for this request |
-| `X-Classer-Mode` | `public` when using unauthenticated mode |
-
-Rate limit headers are included when applicable.
+| `X-Cache-Age` | Seconds since response was cached (cache hits only) |
+| `X-Tokens-Used` | Token count for this request (0 for cache hits) |
+| `X-RateLimit-Limit-Requests` | Maximum requests per minute |
+| `X-RateLimit-Remaining-Requests` | Remaining requests in current window |
+| `X-RateLimit-Limit-Tokens` | Maximum tokens per minute |
+| `X-RateLimit-Remaining-Tokens` | Remaining tokens in current window |
+| `X-RateLimit-Reset` | Unix timestamp when rate limits reset |
 
 ## Error responses
 
