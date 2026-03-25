@@ -6,8 +6,16 @@ description: "Tag text with multiple labels"
 
 ## Request
 
-<ParamField body="text" type="string" required>
-  The text to tag (max ~50k tokens)
+<ParamField body="text" type="string">
+  The text to tag (max 1M tokens). Required unless an image is provided.
+</ParamField>
+
+<ParamField body="image_url" type="string or string[]">
+  Image URL(s) to tag. Images above 4MP (2048×2048) are resized. Max 5 images.
+</ParamField>
+
+<ParamField body="image_base64" type="string or string[]">
+  Base64-encoded image(s) to tag. Images above 4MP (2048×2048) are resized. Max 5 images, ~20MB each.
 </ParamField>
 
 <ParamField body="labels" type="string[]">
