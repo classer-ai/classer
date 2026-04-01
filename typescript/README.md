@@ -82,7 +82,7 @@ const result = await classify({
   labels?: string[],        // 1-200 possible labels
   classifier?: string,      // Saved classifier name or "name@vN"
   descriptions?: Record<string, string>,
-  speed?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
+  priority?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
   cache?: boolean           // Set to false to bypass cache. Default: true
 });
 
@@ -105,7 +105,7 @@ const result = await tag({
   classifier?: string,      // Saved classifier name or "name@vN"
   descriptions?: Record<string, string>,
   threshold?: number,       // Default: 0.5
-  speed?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
+  priority?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
   cache?: boolean           // Set to false to bypass cache. Default: true
 });
 

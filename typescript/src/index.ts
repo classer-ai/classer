@@ -8,8 +8,8 @@ export interface ClassifyRequest {
   classifier?: string;
   /** Maps label name to description for better accuracy */
   descriptions?: Record<string, string>;
-  /** Speed tier: "standard" (default, <1s) or "fast" (<200ms) */
-  speed?: "fast" | "standard";
+  /** Priority tier: "standard" (default, <1s) or "fast" (<200ms) */
+  priority?: "fast" | "standard";
   /** Set to false to bypass cache. Default: true */
   cache?: boolean;
 }
@@ -40,8 +40,8 @@ export interface TagRequest {
   descriptions?: Record<string, string>;
   /** Confidence threshold (0-1). Default: 0.5 */
   threshold?: number;
-  /** Speed tier: "standard" (default, <1s) or "fast" (<200ms) */
-  speed?: "fast" | "standard";
+  /** Priority tier: "standard" (default, <1s) or "fast" (<200ms) */
+  priority?: "fast" | "standard";
   /** Set to false to bypass cache. Default: true */
   cache?: boolean;
 }

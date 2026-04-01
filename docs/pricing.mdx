@@ -1,23 +1,23 @@
 ---
 title: Pricing & Limits
-description: "Speed tiers, pricing, free tier, and rate limits"
+description: "Priority levels, pricing, free tier, and rate limits"
 ---
 
-## Speed tiers
+## Priority levels
 
-Every request is billed per token. Choose the speed that fits your workload.
+Every request is billed per token. Choose the priority level that fits your workload.
 
-| Speed | Price / 1M tokens | Latency | Best for |
-|-------|-------------------|---------|----------|
+| Priority | Price / 1M tokens | Latency | Best for |
+|----------|-------------------|---------|----------|
 | **Fast** | $0.60 | &lt;200ms P95 | Real-time UX, chatbots |
 | **Standard** | $0.20 | &lt;1s P95 | Background processing |
 | **Async Batch** | $0.08 | &lt;15min P95 | Bulk analysis, exports |
 
-Fast and Standard are set via the `speed` parameter on `/v1/classify` and `/v1/tag`. Async Batch pricing applies automatically when using the [async batch endpoints](/api-reference/batch).
+Fast and Standard are set via the `priority` parameter on `/v1/classify` and `/v1/tag`. Async Batch pricing applies automatically when using the [async batch endpoints](/api-reference/batch).
 
 ## Free tier
 
-Every account gets **10M free tokens/month** — no credit card required. Free tokens work on all speed tiers.
+Every account gets **10M free tokens/month** — no credit card required. Free tokens work on all priority levels.
 
 ## Rate limits
 

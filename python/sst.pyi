@@ -52,6 +52,9 @@ class Resource:
     class SesFromEmail:
         type: str
         value: str
+    class SmtpPassword:
+        type: str
+        value: str
     class StripePublishableKey:
         type: str
         value: str

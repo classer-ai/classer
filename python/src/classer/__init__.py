@@ -36,7 +36,7 @@ def classify(
     labels: Optional[list[str]] = None,
     classifier: Optional[str] = None,
     descriptions: Optional[dict[str, str]] = None,
-    speed: Optional[str] = None,
+    priority: Optional[str] = None,
     cache: Optional[bool] = None,
 ) -> ClassifyResponse:
     """Classify text into one of the provided labels (single-label).
@@ -45,7 +45,7 @@ def classify(
     """
     return _get_default_client().classify(
         text, labels=labels, classifier=classifier,
-        descriptions=descriptions, speed=speed, cache=cache,
+        descriptions=descriptions, priority=priority, cache=cache,
     )
 
 
@@ -55,7 +55,7 @@ def tag(
     classifier: Optional[str] = None,
     descriptions: Optional[dict[str, str]] = None,
     threshold: Optional[float] = None,
-    speed: Optional[str] = None,
+    priority: Optional[str] = None,
     cache: Optional[bool] = None,
 ) -> TagResponse:
     """Tag text with multiple labels (multi-label).
@@ -65,5 +65,5 @@ def tag(
     return _get_default_client().tag(
         text, labels=labels, classifier=classifier,
         descriptions=descriptions, threshold=threshold,
-        speed=speed, cache=cache,
+        priority=priority, cache=cache,
     )

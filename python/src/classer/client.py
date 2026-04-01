@@ -71,7 +71,7 @@ class ClasserClient:
         labels: Optional[list[str]] = None,
         classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
-        speed: Optional[str] = None,
+        priority: Optional[str] = None,
         cache: Optional[bool] = None,
         threshold: Optional[float] = None,
     ) -> dict:
@@ -85,8 +85,8 @@ class ClasserClient:
             body["descriptions"] = descriptions
         if threshold is not None:
             body["threshold"] = threshold
-        if speed:
-            body["speed"] = speed
+        if priority:
+            body["priority"] = priority
         if cache is not None:
             body["cache"] = cache
         return body
@@ -97,7 +97,7 @@ class ClasserClient:
         labels: Optional[list[str]] = None,
         classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
-        speed: Optional[str] = None,
+        priority: Optional[str] = None,
         cache: Optional[bool] = None,
     ) -> ClassifyResponse:
         """
@@ -108,7 +108,7 @@ class ClasserClient:
             labels: List of possible labels (1-200).
             classifier: Saved classifier name or "name@vN" reference.
             descriptions: Maps label name to description for better accuracy.
-            speed: Speed tier — "standard" (default, <1s) or "fast" (<200ms).
+            priority: Priority tier — "standard" (default, <1s) or "fast" (<200ms).
             cache: Set to False to bypass cache. Default: True.
 
         Returns:
@@ -126,7 +126,7 @@ class ClasserClient:
 
         body = self._build_body(
             text, labels=labels, classifier=classifier,
-            descriptions=descriptions, speed=speed, cache=cache,
+            descriptions=descriptions, priority=priority, cache=cache,
         )
 
         data = self._request("/v1/classify", body)
@@ -147,7 +147,7 @@ class ClasserClient:
         classifier: Optional[str] = None,
         descriptions: Optional[dict[str, str]] = None,
         threshold: Optional[float] = None,
-        speed: Optional[str] = None,
+        priority: Optional[str] = None,
         cache: Optional[bool] = None,
     ) -> TagResponse:
         """
@@ -159,7 +159,7 @@ class ClasserClient:
             classifier: Saved classifier name or "name@vN" reference.
             descriptions: Maps label name to description for better accuracy.
             threshold: Confidence threshold (0-1). Default: 0.5.
-            speed: Speed tier — "standard" (default, <1s) or "fast" (<200ms).
+            priority: Priority tier — "standard" (default, <1s) or "fast" (<200ms).
             cache: Set to False to bypass cache. Default: True.
 
         Returns:
@@ -180,7 +180,7 @@ class ClasserClient:
         body = self._build_body(
             text, labels=labels, classifier=classifier,
             descriptions=descriptions, threshold=threshold,
-            speed=speed, cache=cache,
+            priority=priority, cache=cache,
         )
 
         data = self._request("/v1/tag", body)

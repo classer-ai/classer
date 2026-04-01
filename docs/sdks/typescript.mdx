@@ -58,7 +58,7 @@ const result = await client.classify({
     technical: "Login, bugs, errors",
     sales: "Pricing or plan questions",
   },
-  speed: "standard",                          // optional: "standard" (default, <1s) or "fast" (<200ms)
+  priority: "standard",                        // optional: "standard" (default, <1s) or "fast" (<200ms)
   cache: true,                                // optional: set false to bypass cache
 });
 
@@ -88,7 +88,7 @@ const result = await client.tag({
   labels: ["politics", "technology", "finance", "sports"],
   threshold: 0.5,                              // optional (default: 0.5)
   descriptions: { technology: "Tech industry news" },  // optional
-  speed: "standard",                           // optional: "standard" (default, <1s) or "fast" (<200ms)
+  priority: "standard",                        // optional: "standard" (default, <1s) or "fast" (<200ms)
   cache: true,                                 // optional: set false to bypass cache
 });
 
@@ -153,7 +153,7 @@ interface ClassifyRequest {
   labels?: string[];
   classifier?: string;
   descriptions?: Record<string, string>;
-  speed?: "fast" | "standard";
+  priority?: "fast" | "standard";
   cache?: boolean;
 }
 ```
@@ -180,7 +180,7 @@ interface TagRequest {
   classifier?: string;
   descriptions?: Record<string, string>;
   threshold?: number;  // default: 0.5
-  speed?: "fast" | "standard";
+  priority?: "fast" | "standard";
   cache?: boolean;
 }
 ```

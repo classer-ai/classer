@@ -99,6 +99,7 @@ All classification endpoints return these headers:
 | `X-RateLimit-Limit-Tokens` | Maximum tokens per minute |
 | `X-RateLimit-Remaining-Tokens` | Remaining tokens in current window |
 | `X-RateLimit-Reset` | Unix timestamp when rate limits reset |
+| `Retry-After` | Seconds to wait before retrying (429 responses only) |
 
 ## Error responses
 
@@ -130,6 +131,6 @@ All classification endpoints return these headers:
 | `429` | Rate limit exceeded |
 | `500` | Internal server error |
 
-## Pricing, speed tiers & limits
+## Pricing, priority levels & limits
 
-See [Pricing & Limits](/pricing) for full details on speed tiers, rate limits, free tier, and validation limits.
+See [Pricing & Limits](/pricing) for full details on priority levels, rate limits, free tier, and validation limits.

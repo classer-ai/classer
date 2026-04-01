@@ -7,11 +7,9 @@ description: "How to authenticate with the Classer API"
 
 You can use the `/v1/classify` and `/v1/tag` endpoints without an API key. Requests without a key run in **public mode** with stricter limits:
 
-- 30 requests/min, 150K tokens/min, 2 concurrent
-- 5-minute cache TTL
-- Responses include `"public": true`
+- 1 request/min, 10K tokens/min, 1 concurrent
 
-For higher limits and longer cache TTL, sign up for a free API key.
+For higher limits, sign up for a free API key.
 
 ## API Keys
 
