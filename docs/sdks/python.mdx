@@ -106,20 +106,12 @@ result.visual_tokens  # image tokens used
 ### File input (PDF, DOCX)
 
 ```python
-# Local file path
+# Also accepts a URL or local file path. Can be combined with text and image inputs.
 result = client.classify(
-    file="invoice.pdf",
+    file=base64_string,
     labels=["invoice", "receipt", "contract"],
 )
 
-# URL
-result = client.classify(
-    file="https://example.com/document.pdf",
-    labels=["invoice", "receipt", "contract"],
-)
-
-# Text extracted from the file is combined with any provided text.
-# Each page is rendered as an image for visual analysis.
 result.tokens         # text tokens
 result.visual_tokens  # page image tokens
 ```

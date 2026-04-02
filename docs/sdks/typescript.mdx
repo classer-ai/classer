@@ -106,20 +106,12 @@ result.visual_tokens  // image tokens used
 ### File input (PDF, DOCX)
 
 ```typescript
-// Base64-encoded file
+// Also accepts a URL. Can be combined with text and image inputs.
 const result = await client.classify({
   file: base64String,
   labels: ["invoice", "receipt", "contract"],
 });
 
-// URL
-const result = await client.classify({
-  file: "https://example.com/document.pdf",
-  labels: ["invoice", "receipt", "contract"],
-});
-
-// Text extracted from the file is combined with any provided text.
-// Each page is rendered as an image for visual analysis.
 result.tokens         // text tokens
 result.visual_tokens  // page image tokens
 ```
@@ -169,15 +161,6 @@ result.total_tokens  // total across all texts
 result.latency_ms    // total request time
 ```
 
-Image and file inputs are shared across all texts:
-
-```typescript
-const result = await client.classifyBatch({
-  texts: ["What is this?", "Describe the document"],
-  file: base64Pdf,
-  labels: ["report", "invoice", "contract"],
-});
-```
 
 ### tagBatch()
 
