@@ -26,7 +26,7 @@ print(result.confidence) # 0.94
 
 ## Configuration
 
-### Environment variable (recommended)
+### Environment variable
 
 ```bash
 export CLASSER_API_KEY=your-api-key
@@ -78,6 +78,52 @@ result = client.classify(
 )
 ```
 
+### Image input
+
+```python
+# URL
+result = client.classify(
+    image="https://example.com/photo.jpg",
+    labels=["cat", "dog", "bird"],
+)
+
+# Base64
+result = client.classify(
+    image=base64_string,
+    labels=["cat", "dog", "bird"],
+)
+
+# Text + image together
+result = client.classify(
+    text="What animal is this?",
+    image="https://example.com/photo.jpg",
+    labels=["cat", "dog", "bird"],
+)
+
+result.visual_tokens  # image tokens used
+```
+
+### File input (PDF, DOCX)
+
+```python
+# Local file path
+result = client.classify(
+    file="invoice.pdf",
+    labels=["invoice", "receipt", "contract"],
+)
+
+# URL
+result = client.classify(
+    file="https://example.com/document.pdf",
+    labels=["invoice", "receipt", "contract"],
+)
+
+# Text extracted from the file is combined with any provided text.
+# Each page is rendered as an image for visual analysis.
+result.tokens         # text tokens
+result.visual_tokens  # page image tokens
+```
+
 ### tag()
 
 Multi-label tagging — returns all labels that exceed the confidence threshold.
@@ -102,15 +148,63 @@ result.latency_ms   # 203.0
 result.cached       # False
 ```
 
+Tag also accepts `image` and `file` parameters, same as classify.
+
+### classify_batch()
+
+Classify multiple texts in a single request. Returns results in the same order as input.
+
+```python
+result = client.classify_batch(
+    texts=["I can't log in", "What's the pricing?", "My invoice is wrong"],
+    labels=["billing", "technical", "sales"],
+)
+
+for r in result.results:
+    print(f"{r.label}: {r.confidence}")
+
+result.total_tokens  # total across all texts
+result.latency_ms    # total request time
+```
+
+Image and file inputs are shared across all texts:
+
+```python
+result = client.classify_batch(
+    texts=["What is this?", "Describe the document"],
+    file="report.pdf",
+    labels=["report", "invoice", "contract"],
+)
+```
+
+### tag_batch()
+
+Tag multiple texts in a single request. Returns results in the same order.
+
+```python
+result = client.tag_batch(
+    texts=["Tech stocks surge", "Election results are in"],
+    labels=["politics", "technology", "finance"],
+    threshold=0.5,
+)
+
+for r in result.results:
+    for t in r.labels:
+        print(f"{t.label}: {t.confidence}")
+```
+
 ### Module-level functions
 
-Both methods are also available as top-level convenience functions that use a default client (reads `CLASSER_API_KEY` from the environment):
+All methods are also available as top-level convenience functions that use a default client (reads `CLASSER_API_KEY` from the environment):
 
 ```python
 import classer
 
 result = classer.classify(text="...", labels=["a", "b"])
 result = classer.tag(text="...", labels=["a", "b"], threshold=0.5)
+result = classer.classify(file="document.pdf", labels=["a", "b"])
+result = classer.classify_batch(texts=["x", "y"], labels=["a", "b"])
+result = classer.tag_batch(texts=["x", "y"], labels=["a", "b"])
 ```
 
 ## Error Handling
@@ -149,9 +243,9 @@ class ClassifyResponse:
     label: Optional[str] = None
     confidence: Optional[float] = None
     tokens: int = 0
+    visual_tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
-    public: Optional[bool] = None
 ```
 
 ### TagResponse
@@ -161,9 +255,9 @@ class ClassifyResponse:
 class TagResponse:
     labels: list[TagLabel]  # empty list when nothing matches
     tokens: int = 0
+    visual_tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
-    public: Optional[bool] = None
 ```
 
 ### TagLabel
@@ -173,6 +267,51 @@ class TagResponse:
 class TagLabel:
     label: str
     confidence: float
+```
+
+### BatchClassifyResponse
+
+```python
+@dataclass
+class BatchClassifyResponse:
+    results: list[BatchClassifyResult]
+    total_tokens: int = 0
+    latency_ms: float = 0.0
+```
+
+### BatchClassifyResult
+
+```python
+@dataclass
+class BatchClassifyResult:
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    tokens: int = 0
+    visual_tokens: int = 0
+    error: Optional[str] = None
+    cached: bool = False
+```
+
+### BatchTagResponse
+
+```python
+@dataclass
+class BatchTagResponse:
+    results: list[BatchTagResult]
+    total_tokens: int = 0
+    latency_ms: float = 0.0
+```
+
+### BatchTagResult
+
+```python
+@dataclass
+class BatchTagResult:
+    labels: list[TagLabel]
+    tokens: int = 0
+    visual_tokens: int = 0
+    error: Optional[str] = None
+    cached: bool = False
 ```
 
 ### ClasserError

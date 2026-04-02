@@ -11,9 +11,9 @@ class ClassifyResponse:
     label: Optional[str] = None
     confidence: Optional[float] = None
     tokens: int = 0
+    visual_tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
-    public: Optional[bool] = None
 
 
 @dataclass
@@ -30,6 +30,47 @@ class TagResponse:
 
     labels: list[TagLabel] = field(default_factory=list)
     tokens: int = 0
+    visual_tokens: int = 0
     latency_ms: float = 0.0
     cached: bool = False
-    public: Optional[bool] = None
+
+
+@dataclass
+class BatchClassifyResult:
+    """Single result item in a batch classify response."""
+
+    label: Optional[str] = None
+    confidence: Optional[float] = None
+    tokens: int = 0
+    visual_tokens: int = 0
+    error: Optional[str] = None
+    cached: bool = False
+
+
+@dataclass
+class BatchClassifyResponse:
+    """Response from batch single-label classification."""
+
+    results: list[BatchClassifyResult] = field(default_factory=list)
+    total_tokens: int = 0
+    latency_ms: float = 0.0
+
+
+@dataclass
+class BatchTagResult:
+    """Single result item in a batch tag response."""
+
+    labels: list[TagLabel] = field(default_factory=list)
+    tokens: int = 0
+    visual_tokens: int = 0
+    error: Optional[str] = None
+    cached: bool = False
+
+
+@dataclass
+class BatchTagResponse:
+    """Response from batch multi-label tagging."""
+
+    results: list[BatchTagResult] = field(default_factory=list)
+    total_tokens: int = 0
+    latency_ms: float = 0.0

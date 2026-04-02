@@ -26,7 +26,7 @@ console.log(result.confidence); // 0.94
 
 ## Configuration
 
-### Environment variable (recommended)
+### Environment variable
 
 ```bash
 export CLASSER_API_KEY=your-api-key
@@ -78,6 +78,52 @@ const result = await client.classify({
 });
 ```
 
+### Image input
+
+```typescript
+// URL
+const result = await client.classify({
+  image: "https://example.com/photo.jpg",
+  labels: ["cat", "dog", "bird"],
+});
+
+// Multiple images
+const result = await client.classify({
+  image: ["https://example.com/1.jpg", "https://example.com/2.jpg"],
+  labels: ["cat", "dog", "bird"],
+});
+
+// Text + image together
+const result = await client.classify({
+  text: "What animal is this?",
+  image: "https://example.com/photo.jpg",
+  labels: ["cat", "dog", "bird"],
+});
+
+result.visual_tokens  // image tokens used
+```
+
+### File input (PDF, DOCX)
+
+```typescript
+// Base64-encoded file
+const result = await client.classify({
+  file: base64String,
+  labels: ["invoice", "receipt", "contract"],
+});
+
+// URL
+const result = await client.classify({
+  file: "https://example.com/document.pdf",
+  labels: ["invoice", "receipt", "contract"],
+});
+
+// Text extracted from the file is combined with any provided text.
+// Each page is rendered as an image for visual analysis.
+result.tokens         // text tokens
+result.visual_tokens  // page image tokens
+```
+
 ### tag()
 
 Multi-label tagging — returns all labels that exceed the confidence threshold.
@@ -103,15 +149,65 @@ result.latency_ms   // 203
 result.cached       // false
 ```
 
-### Module-level functions
+Tag also accepts `image` and `file` parameters, same as classify.
 
-Both methods are also available as top-level convenience functions that use a default client (reads `CLASSER_API_KEY` from the environment):
+### classifyBatch()
+
+Classify multiple texts in a single request. Returns results in the same order as input.
 
 ```typescript
-import { classify, tag } from "classer-ai";
+const result = await client.classifyBatch({
+  texts: ["I can't log in", "What's the pricing?", "My invoice is wrong"],
+  labels: ["billing", "technical", "sales"],
+});
+
+for (const r of result.results) {
+  console.log(`${r.label}: ${r.confidence}`);
+}
+
+result.total_tokens  // total across all texts
+result.latency_ms    // total request time
+```
+
+Image and file inputs are shared across all texts:
+
+```typescript
+const result = await client.classifyBatch({
+  texts: ["What is this?", "Describe the document"],
+  file: base64Pdf,
+  labels: ["report", "invoice", "contract"],
+});
+```
+
+### tagBatch()
+
+Tag multiple texts in a single request. Returns results in the same order.
+
+```typescript
+const result = await client.tagBatch({
+  texts: ["Tech stocks surge", "Election results are in"],
+  labels: ["politics", "technology", "finance"],
+  threshold: 0.5,
+});
+
+for (const r of result.results) {
+  for (const t of r.labels ?? []) {
+    console.log(`${t.label}: ${t.confidence}`);
+  }
+}
+```
+
+### Module-level functions
+
+All methods are also available as top-level convenience functions that use a default client (reads `CLASSER_API_KEY` from the environment):
+
+```typescript
+import { classify, tag, classifyBatch, tagBatch } from "classer-ai";
 
 const result = await classify({ text: "...", labels: ["a", "b"] });
 const tagged = await tag({ text: "...", labels: ["a", "b"], threshold: 0.5 });
+const batch = await classifyBatch({ texts: ["x", "y"], labels: ["a", "b"] });
+const taggedBatch = await tagBatch({ texts: ["x", "y"], labels: ["a", "b"] });
 ```
 
 ## Error Handling
@@ -149,12 +245,14 @@ try {
 
 ```typescript
 interface ClassifyRequest {
-  text: string;
+  text?: string;
   labels?: string[];
   classifier?: string;
   descriptions?: Record<string, string>;
   priority?: "fast" | "standard";
   cache?: boolean;
+  image?: string | string[];
+  file?: string;
 }
 ```
 
@@ -165,9 +263,9 @@ interface ClassifyResponse {
   label?: string;
   confidence?: number;
   tokens: number;
+  visual_tokens?: number;
   latency_ms: number;
   cached: boolean;
-  public?: boolean;
 }
 ```
 
@@ -175,13 +273,15 @@ interface ClassifyResponse {
 
 ```typescript
 interface TagRequest {
-  text: string;
+  text?: string;
   labels?: string[];
   classifier?: string;
   descriptions?: Record<string, string>;
   threshold?: number;  // default: 0.5
   priority?: "fast" | "standard";
   cache?: boolean;
+  image?: string | string[];
+  file?: string;
 }
 ```
 
@@ -200,9 +300,83 @@ interface TagLabel {
 interface TagResponse {
   labels: TagLabel[];  // empty array when nothing matches
   tokens: number;
+  visual_tokens?: number;
   latency_ms: number;
   cached: boolean;
-  public?: boolean;
+}
+```
+
+### BatchClassifyRequest
+
+```typescript
+interface BatchClassifyRequest {
+  texts: string[];
+  labels?: string[];
+  classifier?: string;
+  descriptions?: Record<string, string>;
+  cache?: boolean;
+  image?: string | string[];
+  file?: string;
+}
+```
+
+### BatchClassifyResponse
+
+```typescript
+interface BatchClassifyResponse {
+  results: BatchClassifyResult[];
+  total_tokens: number;
+  latency_ms: number;
+}
+```
+
+### BatchClassifyResult
+
+```typescript
+interface BatchClassifyResult {
+  label?: string;
+  confidence?: number;
+  tokens: number;
+  visual_tokens?: number;
+  error?: string;
+  cached: boolean;
+}
+```
+
+### BatchTagRequest
+
+```typescript
+interface BatchTagRequest {
+  texts: string[];
+  labels?: string[];
+  classifier?: string;
+  descriptions?: Record<string, string>;
+  threshold?: number;
+  cache?: boolean;
+  image?: string | string[];
+  file?: string;
+}
+```
+
+### BatchTagResponse
+
+```typescript
+interface BatchTagResponse {
+  results: BatchTagResult[];
+  total_tokens: number;
+  latency_ms: number;
+}
+```
+
+### BatchTagResult
+
+```typescript
+interface BatchTagResult {
+  labels?: TagLabel[];
+  tokens: number;
+  visual_tokens?: number;
+  error?: string;
+  cached: boolean;
 }
 ```
 

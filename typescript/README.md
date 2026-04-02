@@ -2,7 +2,7 @@
 
 AI text classification API. No training, no prompt engineering - just pass text and labels.
 
-**From $0.08/1M tokens** · **<200ms latency** · **Beats GPT-5 mini accuracy** · **Zero training required**
+**From $0.08/1M tokens** · **Real-time latency** · **Beats GPT-5.4 mini accuracy** · **Zero training required**
 
 See [benchmarks](https://classer.ai/benchmarks).
 
@@ -78,20 +78,21 @@ Classify text into exactly one of the provided labels.
 
 ```typescript
 const result = await classify({
-  text: string,             // Text to classify
-  labels?: string[],        // 1-200 possible labels
-  classifier?: string,      // Saved classifier name or "name@vN"
-  descriptions?: Record<string, string>,
-  priority?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
-  cache?: boolean           // Set to false to bypass cache. Default: true
+  text: "Text to classify",
+  labels: ["label1", "label2"],   // 1-200 possible labels
+  descriptions: { label1: "Description for better accuracy" },
+  priority: "standard",           // "standard" (default, <1s) or "fast" (<200ms)
+  cache: true,                    // set to false to bypass cache
+  image: undefined,               // image URL or base64 string (or array)
+  file: undefined,                // PDF/DOCX — URL or base64 string
 });
 
-// Returns ClassifyResponse
-result.label        // Selected label
-result.confidence   // 0-1 confidence score
-result.tokens       // Total tokens used
-result.latency_ms   // Processing time in ms
-result.cached       // Whether served from cache
+result.label          // selected label
+result.confidence     // 0-1 confidence score
+result.tokens         // total tokens used
+result.visual_tokens  // image tokens (when image or file provided)
+result.latency_ms     // processing time in ms
+result.cached         // whether served from cache
 ```
 
 ### `tag(request)`
@@ -100,21 +101,72 @@ Multi-label tagging — returns all labels above a confidence threshold.
 
 ```typescript
 const result = await tag({
-  text: string,
-  labels?: string[],        // 1-200 possible labels
-  classifier?: string,      // Saved classifier name or "name@vN"
-  descriptions?: Record<string, string>,
-  threshold?: number,       // Default: 0.5
-  priority?: "fast" | "standard",  // "standard" (default, <1s) or "fast" (<200ms)
-  cache?: boolean           // Set to false to bypass cache. Default: true
+  text: "Text to tag",
+  labels: ["label1", "label2"],
+  threshold: 0.5,                 // default: 0.5
+  priority: "standard",
+  image: undefined,               // image URL or base64 string (or array)
+  file: undefined,                // PDF/DOCX — URL or base64 string
 });
 
-// Returns TagResponse
-result.labels       // Array of { label, confidence }
-result.tokens       // Total tokens used
-result.latency_ms   // Processing time in ms
-result.cached       // Whether served from cache
+for (const t of result.labels) {
+  console.log(`${t.label}: ${t.confidence}`);
+}
 ```
+
+### `classifyBatch(request)`
+
+Classify multiple texts in a single request.
+
+```typescript
+const result = await classifyBatch({
+  texts: ["I can't log in", "What's the pricing?"],
+  labels: ["billing", "technical", "sales"],
+  file: undefined,                // shared file for all texts
+  image: undefined,               // shared image for all texts
+});
+
+for (const r of result.results) {
+  console.log(`${r.label}: ${r.confidence}`);
+}
+
+result.total_tokens    // total across all texts
+result.latency_ms      // total request time
+```
+
+### `tagBatch(request)`
+
+Tag multiple texts in a single request.
+
+```typescript
+const result = await tagBatch({
+  texts: ["Tech stocks surge", "Election results"],
+  labels: ["politics", "technology", "finance"],
+  threshold: 0.5,
+});
+
+for (const r of result.results) {
+  for (const t of r.labels ?? []) {
+    console.log(`${t.label}: ${t.confidence}`);
+  }
+}
+```
+
+### Image and file inputs
+
+```typescript
+const result = await classify({
+  image: base64String,
+  labels: ["cat", "dog", "bird"]
+});
+
+const result = await classify({
+  file: base64String,
+  labels: ["invoice", "receipt", "contract"]
+});
+```
+
+`image` accepts a base64 string, URL, or an array of either. `file` accepts a base64 string or URL. Both work with `classify`, `tag`, and batch methods.
 
 ## Error Handling
 

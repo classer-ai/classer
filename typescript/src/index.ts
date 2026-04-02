@@ -1,7 +1,7 @@
 // Types
 export interface ClassifyRequest {
-  /** Text to classify */
-  text: string;
+  /** Text to classify. Optional if image or file is provided. */
+  text?: string;
   /** List of possible labels (1-200) */
   labels?: string[];
   /** Saved classifier name or "name@vN" reference */
@@ -12,6 +12,10 @@ export interface ClassifyRequest {
   priority?: "fast" | "standard";
   /** Set to false to bypass cache. Default: true */
   cache?: boolean;
+  /** Image URL or base64 string (or array). Max 20 images. */
+  image?: string | string[];
+  /** PDF or DOCX file — URL or base64 string. Max 20 pages. */
+  file?: string;
 }
 
 export interface ClassifyResponse {
@@ -21,17 +25,17 @@ export interface ClassifyResponse {
   confidence?: number;
   /** Total tokens used */
   tokens: number;
+  /** Visual (image) tokens used. Present when image or file is provided. */
+  visual_tokens?: number;
   /** Processing time in milliseconds */
   latency_ms: number;
   /** Whether the response was served from cache */
   cached: boolean;
-  /** Present when using public (unauthenticated) mode */
-  public?: boolean;
 }
 
 export interface TagRequest {
-  /** Text to tag */
-  text: string;
+  /** Text to tag. Optional if image or file is provided. */
+  text?: string;
   /** List of possible labels (1-200) */
   labels?: string[];
   /** Saved classifier name or "name@vN" reference */
@@ -44,6 +48,10 @@ export interface TagRequest {
   priority?: "fast" | "standard";
   /** Set to false to bypass cache. Default: true */
   cache?: boolean;
+  /** Image URL or base64 string (or array). Max 20 images. */
+  image?: string | string[];
+  /** PDF or DOCX file — URL or base64 string. Max 20 pages. */
+  file?: string;
 }
 
 export interface TagLabel {
@@ -56,19 +64,86 @@ export interface TagResponse {
   labels: TagLabel[];
   /** Total tokens used */
   tokens: number;
+  /** Visual (image) tokens used. Present when image or file is provided. */
+  visual_tokens?: number;
   /** Processing time in milliseconds */
   latency_ms: number;
   /** Whether the response was served from cache */
   cached: boolean;
-  /** Present when using public (unauthenticated) mode */
-  public?: boolean;
+}
+
+export interface BatchClassifyRequest {
+  /** List of texts to classify (1-1000) */
+  texts: string[];
+  /** List of possible labels (1-200) */
+  labels?: string[];
+  /** Saved classifier name or "name@vN" reference */
+  classifier?: string;
+  /** Maps label name to description for better accuracy */
+  descriptions?: Record<string, string>;
+  /** Set to false to bypass cache. Default: true */
+  cache?: boolean;
+  /** Shared image for all texts — URL or base64 string (or array). Max 20 images. */
+  image?: string | string[];
+  /** Shared PDF or DOCX file — URL or base64 string. Max 20 pages. */
+  file?: string;
+}
+
+export interface BatchClassifyResult {
+  label?: string;
+  confidence?: number;
+  tokens: number;
+  visual_tokens?: number;
+  error?: string;
+  cached: boolean;
+}
+
+export interface BatchClassifyResponse {
+  results: BatchClassifyResult[];
+  total_tokens: number;
+  latency_ms: number;
+}
+
+export interface BatchTagRequest {
+  /** List of texts to tag (1-1000) */
+  texts: string[];
+  /** List of possible labels (1-200) */
+  labels?: string[];
+  /** Saved classifier name or "name@vN" reference */
+  classifier?: string;
+  /** Maps label name to description for better accuracy */
+  descriptions?: Record<string, string>;
+  /** Confidence threshold (0-1). Default: 0.5 */
+  threshold?: number;
+  /** Set to false to bypass cache. Default: true */
+  cache?: boolean;
+  /** Shared image for all texts — URL or base64 string (or array). Max 20 images. */
+  image?: string | string[];
+  /** Shared PDF or DOCX file — URL or base64 string. Max 20 pages. */
+  file?: string;
+}
+
+export interface BatchTagResult {
+  labels?: TagLabel[];
+  tokens: number;
+  visual_tokens?: number;
+  error?: string;
+  cached: boolean;
+}
+
+export interface BatchTagResponse {
+  results: BatchTagResult[];
+  total_tokens: number;
+  latency_ms: number;
 }
 
 export interface ClasserConfig {
   /** API key for authentication. Optional for local development, required for production. */
   apiKey?: string;
-  /** Request timeout in seconds. Default: 30 */
+  /** Request timeout in seconds for classify/tag. Default: 30 */
   timeout?: number;
+  /** Request timeout in seconds for batch methods. Default: 600 (10 min) */
+  batchTimeout?: number;
 }
 
 class ClasserError extends Error {
@@ -85,14 +160,16 @@ class ClasserError extends Error {
 class ClasserClient {
   private apiKey: string;
   private timeout: number;
+  private batchTimeout: number;
   private static readonly BASE_URL = "https://api.classer.ai";
 
   constructor(config: ClasserConfig = {}) {
     this.apiKey = config.apiKey || process.env.CLASSER_API_KEY || "";
     this.timeout = config.timeout ?? 30;
+    this.batchTimeout = config.batchTimeout ?? 600;
   }
 
-  private async request<T>(endpoint: string, body: unknown): Promise<T> {
+  private async request<T>(endpoint: string, body: unknown, timeoutSeconds?: number): Promise<T> {
     const url = `${ClasserClient.BASE_URL}${endpoint}`;
 
     const headers: Record<string, string> = {
@@ -103,8 +180,9 @@ class ClasserClient {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
+    const effectiveTimeout = timeoutSeconds ?? this.timeout;
     const controller = new AbortController();
-    const timeoutMs = this.timeout * 1000;
+    const timeoutMs = effectiveTimeout * 1000;
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     let response: Response;
@@ -185,6 +263,72 @@ class ClasserClient {
     }
     return this.request<TagResponse>("/v1/tag", request);
   }
+
+  /**
+   * Classify multiple texts in a single request (single-label).
+   *
+   * @example
+   * ```ts
+   * const result = await classer.classifyBatch({
+   *   texts: ["I can't log in", "What's the pricing?"],
+   *   labels: ["billing", "technical", "sales"]
+   * });
+   * for (const r of result.results) {
+   *   console.log(`${r.label}: ${r.confidence}`);
+   * }
+   * ```
+   */
+  async classifyBatch(request: BatchClassifyRequest): Promise<BatchClassifyResponse> {
+    if (!request.labels && !request.classifier) {
+      throw new ClasserError("Either 'labels' or 'classifier' must be provided");
+    }
+    const data = await this.request<{ results: any[]; total_tokens: number; latency_ms: number }>("/v1/classify/batch", request, this.batchTimeout);
+    return {
+      results: (data.results || []).map((item) => ({
+        label: item.label,
+        confidence: item.confidence,
+        tokens: item.tokens ?? 0,
+        visual_tokens: item.visual_tokens,
+        error: item.error,
+        cached: item.cache?.hit ?? false,
+      })),
+      total_tokens: data.total_tokens ?? 0,
+      latency_ms: data.latency_ms ?? 0,
+    };
+  }
+
+  /**
+   * Tag multiple texts in a single request (multi-label).
+   *
+   * @example
+   * ```ts
+   * const result = await classer.tagBatch({
+   *   texts: ["Tech stocks surge", "Election results"],
+   *   labels: ["politics", "technology", "finance"],
+   *   threshold: 0.5
+   * });
+   * for (const r of result.results) {
+   *   console.log(r.labels);
+   * }
+   * ```
+   */
+  async tagBatch(request: BatchTagRequest): Promise<BatchTagResponse> {
+    if (!request.labels && !request.classifier) {
+      throw new ClasserError("Either 'labels' or 'classifier' must be provided");
+    }
+    const data = await this.request<{ results: any[]; total_tokens: number; latency_ms: number }>("/v1/tag/batch", request, this.batchTimeout);
+    return {
+      results: (data.results || []).map((item) => ({
+        labels: item.labels,
+        tokens: item.tokens ?? 0,
+        visual_tokens: item.visual_tokens,
+        error: item.error,
+        cached: item.cache?.hit ?? false,
+      })),
+      total_tokens: data.total_tokens ?? 0,
+      latency_ms: data.latency_ms ?? 0,
+    };
+  }
 }
 
 // Lazy default instance
@@ -202,11 +346,15 @@ export { ClasserClient, ClasserError };
 
 export const classify = (request: ClassifyRequest) => getDefaultClient().classify(request);
 export const tag = (request: TagRequest) => getDefaultClient().tag(request);
+export const classifyBatch = (request: BatchClassifyRequest) => getDefaultClient().classifyBatch(request);
+export const tagBatch = (request: BatchTagRequest) => getDefaultClient().tagBatch(request);
 
 // Default export for `import Classer from "classer"`
 export default {
   ClasserClient,
   ClasserError,
   classify,
+  classifyBatch,
   tag,
+  tagBatch,
 };
