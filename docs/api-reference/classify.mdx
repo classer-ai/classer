@@ -7,11 +7,15 @@ description: "Classify text into exactly one label"
 ## Request
 
 <ParamField body="text" type="string">
-  The text to classify (max 1M tokens). Required unless an image is provided.
+  The text to classify (max 1M tokens). Required unless an image or file is provided.
 </ParamField>
 
 <ParamField body="image" type="string or string[]">
-  Image(s) to classify — URL (`https://...`) or base64-encoded string. Images above 4MP (2048×2048) are resized. Max 5 images.
+  Image(s) to classify — URL (`https://...`) or base64-encoded string. Images above 4MP (2048×2048) are resized. Max 20 images.
+</ParamField>
+
+<ParamField body="file" type="string">
+  PDF or DOCX file — URL or base64-encoded string. Text is extracted and each page is converted to an image for visual analysis. Max 20 pages.
 </ParamField>
 
 <ParamField body="labels" type="string[]">

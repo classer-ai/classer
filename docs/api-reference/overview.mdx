@@ -58,6 +58,10 @@ See [Authentication](/authentication) for details.
 
 All endpoints accept JSON with `Content-Type: application/json`. Maximum request body size is 1MB for real-time endpoints.
 
+### File inputs
+
+The `/v1/classify` and `/v1/tag` endpoints accept a `file` field for PDF and DOCX documents. The API extracts text and converts each page to an image, then classifies using both the text content and visual layout. Max 20 pages.
+
 ## Response format
 
 Classification responses (`/v1/classify`, `/v1/tag`) include:
