@@ -19,9 +19,7 @@ changes needed.
 
 | Model | Input ($/1M tokens) | Output ($/1M tokens) | Best for |
 |-------|---------------------|----------------------|----------|
-| **gpt-5.4** | $1.62 | $6.50 | Complex reasoning, long-form responses, agents |
-| **gpt-5.4-mini** | $0.16 | $1.30 | High-volume tasks, lower latency |
-| **stimy-vl** | $0.20 | $0.20 | Vision-language understanding (self-hosted) |
+| **DeepSeek-V4-Flash** | $0.09 | $0.18 | Open-weights, cost-sensitive workloads |
 
 Pricing applies to both `/v1/chat/completions` and `/v1/responses`. Use
 [`GET /v1/models`](#list-models) to enumerate the live deployments.
@@ -38,9 +36,16 @@ Pricing applies to both `/v1/chat/completions` and `/v1/responses`. Use
 
 `POST /v1/chat/completions` accepts the OpenAI Chat Completions request shape verbatim and returns the upstream response unchanged.
 
+<Note>
+**Streaming required.** Set `stream: true` on every request — non-streaming
+calls return `400 streaming only`. The proxy auto-injects
+`stream_options.include_usage=true` so the final SSE chunk carries the
+token count needed for billing.
+</Note>
+
 ## Responses
 
-`POST /v1/responses` is the OpenAI Responses API. Same models, same pricing as chat completions; the request and response shapes match OpenAI's spec.
+`POST /v1/responses` is the OpenAI Responses API. Same model, same pricing as chat completions; the request and response shapes match OpenAI's spec.
 
 ## List models
 
@@ -69,9 +74,7 @@ for m in client.models.list().data:
 {
   "object": "list",
   "data": [
-    {"id": "gpt-5.4",      "object": "model", "owned_by": "azure"},
-    {"id": "gpt-5.4-mini", "object": "model", "owned_by": "azure"},
-    {"id": "stimy-vl",     "object": "model", "owned_by": "self-hosted"}
+    {"id": "DeepSeek-V4-Flash", "object": "model", "owned_by": "azure"}
   ]
 }
 ```
@@ -84,5 +87,6 @@ for m in client.models.list().data:
 | 401 | `INVALID_API_KEY` | Missing or invalid `Authorization: Bearer …` header |
 | 400 | `invalid_request_error` | `model` not in the allow-list (response includes the list of valid models) |
 | 400 | `invalid_request_error` | `model` field missing entirely |
+| 400 | – | Model requires `stream: true` (DeepSeek-V4-Flash) |
 | 402 | `INSUFFICIENT_BALANCE` | Account balance is below the grace buffer; top up to resume |
 | 503 | – | Generate gateway not configured / unreachable |
