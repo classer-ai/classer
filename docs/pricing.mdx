@@ -15,6 +15,29 @@ Every request is billed per token. Choose the priority level that fits your work
 
 Fast and Standard are set via the `priority` parameter on `/v1/classify` and `/v1/tag`. Async Batch pricing applies automatically when using the [async batch endpoints](/api-reference/batch).
 
+## Generative LLM models
+
+`/v1/chat/completions` and `/v1/responses` are billed per-model, per-direction
+(input vs output tokens):
+
+| Model | Input ($/1M tokens) | Output ($/1M tokens) | Provider |
+|-------|---------------------|----------------------|----------|
+| **gpt-5.4** | $1.62 | $6.50 | Azure OpenAI |
+| **gpt-5.4-mini** | $0.16 | $1.30 | Azure OpenAI |
+| **stimy-vl** | $0.20 | $0.20 | Self-hosted (vision-language) |
+
+Token counts come straight from the upstream `usage` object on every response
+(streaming or not), so the bill always matches what the model actually
+generated. See [Generative LLM](/api-reference/generate) for endpoint
+details.
+
+<Note>
+Reasoning models (such as future `gpt-5.5`) bill the full
+`completion_tokens`, which includes hidden reasoning tokens generated before
+any visible output. Set `max_completion_tokens` generously or your visible
+content may come back empty.
+</Note>
+
 ## Free tier
 
 Every account gets **10M free tokens/month** — no credit card required. Free tokens work on all priority levels.

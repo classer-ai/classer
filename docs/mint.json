@@ -59,6 +59,7 @@
         "api-reference/overview",
         "api-reference/classify",
         "api-reference/tag",
+        "api-reference/generate",
         "api-reference/batch"
       ]
     }

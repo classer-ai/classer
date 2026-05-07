@@ -28,6 +28,14 @@ See [Authentication](/authentication) for details.
 | POST | [`/v1/classify`](/api-reference/classify) | Single-label classification |
 | POST | [`/v1/tag`](/api-reference/tag) | Multi-label tagging |
 
+### Generative LLM (OpenAI-compatible)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | [`/v1/chat/completions`](/api-reference/generate#chat-completions) | OpenAI Chat Completions API |
+| POST | [`/v1/responses`](/api-reference/generate#responses) | OpenAI Responses API |
+| GET  | [`/v1/models`](/api-reference/generate#list-models) | List available generative models |
+
 ### Batch
 
 | Method | Endpoint | Description |

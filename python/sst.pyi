@@ -55,6 +55,21 @@ class Resource:
     class SmtpPassword:
         type: str
         value: str
+    class StatuspageApiKey:
+        type: str
+        value: str
+    class StatuspageComponentApi:
+        type: str
+        value: str
+    class StatuspageComponentDashboard:
+        type: str
+        value: str
+    class StatuspageComponentGateway:
+        type: str
+        value: str
+    class StatuspagePageId:
+        type: str
+        value: str
     class StripePublishableKey:
         type: str
         value: str
