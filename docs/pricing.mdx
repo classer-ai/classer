@@ -20,19 +20,15 @@ Fast and Standard are set via the `priority` parameter on `/v1/classify` and `/v
 `/v1/chat/completions` and `/v1/responses` are billed per-model, per-direction
 (input vs output tokens):
 
-| Model | Input ($/1M tokens) | Output ($/1M tokens) | Provider |
-|-------|---------------------|----------------------|----------|
-| **DeepSeek-V4-Flash** | $0.14 | $0.28 | Azure AI Foundry |
+| Model | Input ($/1M) | Cache read ($/1M) | Output ($/1M) |
+|-------|--------------|-------------------|---------------|
+| `deepseek-ai/DeepSeek-V4-Flash` | $0.10 | – | $0.28 |
+| `Qwen/Qwen3.6-35B-A3B` | $0.15 | $0.05 | $1.00 |
+| `moonshotai/Kimi-K2.6` | $0.70 | – | $4.00 |
 
-Token counts come straight from the upstream `usage` chunk on the streaming
-response, so the bill always matches what the model actually generated. See
-[Generative LLM](/api-reference/generate) for endpoint details.
-
-<Note>
-DeepSeek-V4-Flash is **streaming-only** through Classer — set `stream: true`
-on every request. The proxy auto-injects `stream_options.include_usage=true`
-so the final SSE chunk carries the token count we bill from.
-</Note>
+Token counts come from the upstream `usage` field, so the bill always matches
+what the model actually generated. Both streaming and non-streaming calls are
+supported. See [Generative LLM](/api-reference/generate) for endpoint details.
 
 ## Free tier
 

@@ -15,14 +15,25 @@ as you would against OpenAI.
 changes needed.
 </Note>
 
+## Get an API key
+
+Create one at [classer.ai/api-keys](https://classer.ai/api-keys). You can
+configure per-key logging (off by default for inputs and outputs) and an
+optional retention window. The key value is shown once at creation — copy it
+immediately.
+
 ## Available models
 
-| Model | Input ($/1M tokens) | Output ($/1M tokens) | Best for |
-|-------|---------------------|----------------------|----------|
-| **DeepSeek-V4-Flash** | $0.14 | $0.28 | Open-weights, cost-sensitive workloads |
+| Model | Context | Input ($/1M) | Cache read ($/1M) | Output ($/1M) | Notes |
+|-------|---------|--------------|-------------------|---------------|-------|
+| `deepseek-ai/DeepSeek-V4-Flash` | 1M | $0.10 | – | $0.28 | Open-weights, cost-sensitive workloads |
+| `Qwen/Qwen3.6-35B-A3B` | 256K | $0.15 | $0.05 | $1.00 | Vision, tool use, structured outputs |
+| `moonshotai/Kimi-K2.6` | 256K | $0.70 | – | $4.00 | Reasoning, vision, tool use |
 
 Pricing applies to both `/v1/chat/completions` and `/v1/responses`. Use
-[`GET /v1/models`](#list-models) to enumerate the live deployments.
+[`GET /v1/models`](#list-models) for the live machine-readable catalog
+including per-model `supported_features`, `supported_sampling_parameters`,
+quantization, and modalities.
 
 ## Endpoints
 
@@ -34,23 +45,18 @@ Pricing applies to both `/v1/chat/completions` and `/v1/responses`. Use
 
 ## Chat completions
 
-`POST /v1/chat/completions` accepts the OpenAI Chat Completions request shape verbatim and returns the upstream response unchanged.
-
-<Note>
-**Streaming required.** Set `stream: true` on every request — non-streaming
-calls return `400 streaming only`. The proxy auto-injects
-`stream_options.include_usage=true` so the final SSE chunk carries the
-token count needed for billing.
-</Note>
+`POST /v1/chat/completions` accepts the OpenAI Chat Completions request shape verbatim and returns the upstream response unchanged. Both streaming (`stream: true`) and non-streaming requests are supported. Usage tokens are populated in the response for both modes — the proxy automatically negotiates `stream_options.include_usage` where needed so billing is exact.
 
 ## Responses
 
-`POST /v1/responses` is the OpenAI Responses API. Same model, same pricing as chat completions; the request and response shapes match OpenAI's spec.
+`POST /v1/responses` is the OpenAI Responses API. Same models, same pricing as chat completions; the request and response shapes match OpenAI's spec.
 
 ## List models
 
-`GET /v1/models` returns the live deployment list. Use this to discover which
-generative models your account can call.
+`GET /v1/models` returns the live deployment list with full OpenRouter-style
+metadata: pricing, context length, max output length, quantization,
+input/output modalities, supported sampling parameters, and supported
+features per model.
 
 <CodeGroup>
 
@@ -74,7 +80,24 @@ for m in client.models.list().data:
 {
   "object": "list",
   "data": [
-    {"id": "DeepSeek-V4-Flash", "object": "model", "owned_by": "azure"}
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "hugging_face_id": "deepseek-ai/DeepSeek-V4-Flash",
+      "name": "DeepSeek: V4 Flash",
+      "input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "quantization": "bf16",
+      "context_length": 1000000,
+      "max_output_length": 128000,
+      "pricing": {
+        "prompt": "0.0000001",
+        "completion": "0.00000028",
+        "image": "0",
+        "request": "0",
+        "input_cache_read": "0"
+      },
+      "supported_features": ["tools", "json_mode"]
+    }
   ]
 }
 ```
@@ -87,6 +110,5 @@ for m in client.models.list().data:
 | 401 | `INVALID_API_KEY` | Missing or invalid `Authorization: Bearer …` header |
 | 400 | `invalid_request_error` | `model` not in the allow-list (response includes the list of valid models) |
 | 400 | `invalid_request_error` | `model` field missing entirely |
-| 400 | – | Model requires `stream: true` (DeepSeek-V4-Flash) |
 | 402 | `INSUFFICIENT_BALANCE` | Account balance is below the grace buffer; top up to resume |
 | 503 | – | Generate gateway not configured / unreachable |
